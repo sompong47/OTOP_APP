@@ -19,6 +19,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
+    // Wait for the frame to complete before calling provider
+    await Future.delayed(Duration.zero);
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     // Initialize auth provider

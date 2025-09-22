@@ -196,4 +196,125 @@ class Helpers {
   static String getImagePlaceholder() {
     return AppConstants.placeholderImage;
   }
+
+  // ===== IMAGE HELPER FUNCTIONS =====
+  
+  // Get full image URL
+  static String? getFullImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return null;
+    
+    // ถ้า URL เป็น full URL แล้ว ให้ return ตรงๆ
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // ถ้าเป็น relative path ให้เพิ่ม base URL
+    // เปลี่ยน IP นี้ตามการใช้งาน:
+    // - Android Emulator: 10.0.2.2
+    // - iOS Simulator: localhost
+    // - Physical Device: IP ของเครื่อง server
+    const String baseUrl = 'http://10.0.2.2:8000'; // เปลี่ยนตามจริง
+    
+    // ลบ slash ที่ซ้ำ
+    String cleanPath = imageUrl.startsWith('/') ? imageUrl : '/$imageUrl';
+    return '$baseUrl$cleanPath';
+  }
+  
+  // Log image URL for debugging
+  static void logImageUrl(String? originalUrl, String? processedUrl) {
+    debugPrint('📸 Original image URL: $originalUrl');
+    debugPrint('📸 Processed image URL: $processedUrl');
+  }
+}
+
+// Widget สำหรับแสดงรูป product
+class ProductImage extends StatelessWidget {
+  final String? imageUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final BorderRadius? borderRadius;
+  
+  const ProductImage({
+    Key? key,
+    this.imageUrl,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.borderRadius,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    final String? fullUrl = Helpers.getFullImageUrl(imageUrl);
+    
+    // Debug logging
+    Helpers.logImageUrl(imageUrl, fullUrl);
+    
+    if (fullUrl == null) {
+      return _buildPlaceholder();
+    }
+    
+    return ClipRRect(
+      borderRadius: borderRadius ?? BorderRadius.zero,
+      child: Image.network(
+        fullUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildLoading();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('❌ Error loading image: $fullUrl');
+          debugPrint('❌ Error details: $error');
+          return _buildPlaceholder();
+        },
+      ),
+    );
+  }
+  
+  Widget _buildPlaceholder() {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: borderRadius,
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported,
+            size: 40,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 4),
+          Text(
+            'ไม่มีรูป',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildLoading() {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: borderRadius,
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
 }

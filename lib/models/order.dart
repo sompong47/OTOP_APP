@@ -1,183 +1,218 @@
 class Order {
   final int id;
-  final String customerName;
-  final String customerPhone;
-  final String customerEmail;
+  final String orderNumber;
+  final DateTime orderDate;
   final double totalAmount;
-  final String shippingAddress;
-  final String paymentMethod;
+  final double shippingFee;
+  final double discount;
   final String status;
-  final DateTime createdAt;
+  final String paymentMethod;
+  final String? paymentStatus;
   final List<OrderItem> items;
+  final OrderAddress shippingAddress;
+  final String? trackingNumber;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Order({
     required this.id,
-    required this.customerName,
-    required this.customerPhone,
-    required this.customerEmail,
+    required this.orderNumber,
+    required this.orderDate,
     required this.totalAmount,
-    required this.shippingAddress,
-    required this.paymentMethod,
+    this.shippingFee = 0.0,
+    this.discount = 0.0,
     required this.status,
-    required this.createdAt,
+    required this.paymentMethod,
+    this.paymentStatus,
     required this.items,
+    required this.shippingAddress,
+    this.trackingNumber,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
-      id: json['id'],
-      customerName: json['customer_name'],
-      customerPhone: json['customer_phone'] ?? '',
-      customerEmail: json['customer_email'] ?? '',
-      totalAmount: double.parse(json['total_amount'].toString()),
-      shippingAddress: json['shipping_address'],
-      paymentMethod: json['payment_method'],
-      status: json['status'],
-      createdAt: DateTime.parse(json['created_at']),
-      items: (json['items'] as List?)
-              ?.map((item) => OrderItem.fromJson(item))
-              .toList() ??
-          [],
+      id: json['id'] ?? 0,
+      orderNumber: json['order_number'] ?? '',
+      orderDate: DateTime.parse(json['order_date'] ?? DateTime.now().toIso8601String()),
+      totalAmount: (json['total_amount'] ?? 0).toDouble(),
+      shippingFee: (json['shipping_fee'] ?? 0).toDouble(),
+      discount: (json['discount'] ?? 0).toDouble(),
+      status: json['status'] ?? 'pending',
+      paymentMethod: json['payment_method'] ?? 'cod',
+      paymentStatus: json['payment_status'],
+      items: (json['items'] as List<dynamic>?)
+          ?.map((item) => OrderItem.fromJson(item))
+          .toList() ?? [],
+      shippingAddress: OrderAddress.fromJson(json['shipping_address'] ?? {}),
+      trackingNumber: json['tracking_number'],
+      notes: json['notes'],
+      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'customer_email': customerEmail,
+      'order_number': orderNumber,
+      'order_date': orderDate.toIso8601String(),
       'total_amount': totalAmount,
-      'shipping_address': shippingAddress,
-      'payment_method': paymentMethod,
+      'shipping_fee': shippingFee,
+      'discount': discount,
       'status': status,
-      'created_at': createdAt.toIso8601String(),
+      'payment_method': paymentMethod,
+      'payment_status': paymentStatus,
       'items': items.map((item) => item.toJson()).toList(),
+      'shipping_address': shippingAddress.toJson(),
+      'tracking_number': trackingNumber,
+      'notes': notes,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  // Helper methods
-  String get statusDisplayName {
-    switch (status) {
-      case 'pending':
-        return 'รอดำเนินการ';
-      case 'confirmed':
-        return 'ยืนยันแล้ว';
-      case 'shipped':
-        return 'จัดส่งแล้ว';
-      case 'delivered':
-        return 'ส่งถึงแล้ว';
-      case 'cancelled':
-        return 'ยกเลิก';
-      default:
-        return status;
-    }
-  }
-
-  String get paymentMethodDisplayName {
-    switch (paymentMethod) {
-      case 'transfer':
-        return 'โอนเงิน';
-      case 'cod':
-        return 'เก็บเงินปลายทาง';
-      default:
-        return paymentMethod;
-    }
-  }
-
-  int get totalItemsCount {
-    return items.fold(0, (sum, item) => sum + item.quantity);
-  }
+  double get subtotal => items.fold(0.0, (sum, item) => sum + item.subtotal);
+  double get finalAmount => totalAmount + shippingFee - discount;
 }
 
 class OrderItem {
-  final int? id;
-  final int product;
+  final int id;
+  final int productId;
   final String productName;
-  final int quantity;
+  final String? productImage;
   final double price;
+  final int quantity;
+  final String? variant;
 
   OrderItem({
-    this.id,
-    required this.product,
+    required this.id,
+    required this.productId,
     required this.productName,
-    required this.quantity,
+    this.productImage,
     required this.price,
+    required this.quantity,
+    this.variant,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      id: json['id'],
-      product: json['product'],
+      id: json['id'] ?? 0,
+      productId: json['product_id'] ?? 0,
       productName: json['product_name'] ?? '',
-      quantity: json['quantity'],
-      price: double.parse(json['price'].toString()),
+      productImage: json['product_image'],
+      price: (json['price'] ?? 0).toDouble(),
+      quantity: json['quantity'] ?? 0,
+      variant: json['variant'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      if (id != null) 'id': id,
-      'product': product,
+      'id': id,
+      'product_id': productId,
       'product_name': productName,
-      'quantity': quantity,
+      'product_image': productImage,
       'price': price,
+      'quantity': quantity,
+      'variant': variant,
     };
   }
 
-  double get totalPrice => price * quantity;
+  double get subtotal => price * quantity;
 }
 
-// For creating orders
+class OrderAddress {
+  final String fullName;
+  final String phone;
+  final String address;
+  final String district;
+  final String province;
+  final String postalCode;
+  final String? additionalInfo;
+
+  OrderAddress({
+    required this.fullName,
+    required this.phone,
+    required this.address,
+    required this.district,
+    required this.province,
+    required this.postalCode,
+    this.additionalInfo,
+  });
+
+  factory OrderAddress.fromJson(Map<String, dynamic> json) {
+    return OrderAddress(
+      fullName: json['full_name'] ?? '',
+      phone: json['phone'] ?? '',
+      address: json['address'] ?? '',
+      district: json['district'] ?? '',
+      province: json['province'] ?? '',
+      postalCode: json['postal_code'] ?? '',
+      additionalInfo: json['additional_info'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'full_name': fullName,
+      'phone': phone,
+      'address': address,
+      'district': district,
+      'province': province,
+      'postal_code': postalCode,
+      'additional_info': additionalInfo,
+    };
+  }
+
+  String get fullAddress {
+    return '$address $district $province $postalCode';
+  }
+}
+
+// สำหรับสร้าง Order ใหม่
 class CreateOrderRequest {
-  final String customerName;
-  final String customerPhone;
-  final String customerEmail;
-  final String shippingAddress;
-  final String paymentMethod;
   final List<CreateOrderItem> items;
+  final OrderAddress shippingAddress;
+  final String paymentMethod;
+  final String? notes;
 
   CreateOrderRequest({
-    required this.customerName,
-    required this.customerPhone,
-    required this.customerEmail,
+    required this.items,
     required this.shippingAddress,
     required this.paymentMethod,
-    required this.items,
+    this.notes,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'customer_email': customerEmail,
-      'shipping_address': shippingAddress,
-      'payment_method': paymentMethod,
       'items': items.map((item) => item.toJson()).toList(),
+      'shipping_address': shippingAddress.toJson(),
+      'payment_method': paymentMethod,
+      'notes': notes,
     };
-  }
-
-  double get totalAmount {
-    return items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 }
 
 class CreateOrderItem {
   final int productId;
   final int quantity;
-  final double price;
+  final String? variant;
 
   CreateOrderItem({
     required this.productId,
     required this.quantity,
-    required this.price,
+    this.variant,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'product_id': productId,
       'quantity': quantity,
-      'price': price,
+      'variant': variant,
     };
   }
 }
