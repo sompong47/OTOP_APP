@@ -78,7 +78,6 @@ class _HomeTabState extends State<HomeTab> {
   @override
   void initState() {
     super.initState();
-    // Load featured products when home screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductProvider>(context, listen: false).loadProducts();
     });
@@ -87,30 +86,42 @@ class _HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('OTOP Store'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text(
+          'OTOP Store',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: AppConstants.fontSizeExtraLarge,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: AppConstants.primaryColor,
+        elevation: 1,
+        centerTitle: true,
         actions: [
           IconButton(
             onPressed: () {
-              // TODO: Navigate to search
               Helpers.showSnackBar(context, 'กำลังพัฒนาฟีเจอร์ค้นหา...');
             },
             icon: const Icon(Icons.search),
-            tooltip: 'ค้นหา',
+            tooltip: 'ค้นหาสินค้า',
           ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
               return PopupMenuButton(
-                icon: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppConstants.primaryColor,
-                  child: Text(
-                    authProvider.user?.username.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                icon: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppConstants.primaryColor,
+                    child: Text(
+                      authProvider.user?.username.substring(0, 1).toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppConstants.fontSizeMedium,
+                      ),
                     ),
                   ),
                 ),
@@ -118,25 +129,18 @@ class _HomeTabState extends State<HomeTab> {
                   PopupMenuItem(
                     child: const Row(
                       children: [
-                        Icon(Icons.person),
-                        SizedBox(width: 8),
+                        Icon(Icons.person, color: AppConstants.primaryColor),
+                        SizedBox(width: 12),
                         Text('โปรไฟล์'),
                       ],
                     ),
-                    onTap: () {
-                      // Navigate to profile tab
-                      if (context.findAncestorStateOfType<_HomeScreenState>() != null) {
-                        context.findAncestorStateOfType<_HomeScreenState>()!.setState(() {
-                          context.findAncestorStateOfType<_HomeScreenState>()!._currentIndex = 4;
-                        });
-                      }
-                    },
+                    onTap: () => _navigateToTab(4),
                   ),
                   PopupMenuItem(
                     child: const Row(
                       children: [
                         Icon(Icons.logout, color: AppConstants.errorColor),
-                        SizedBox(width: 8),
+                        SizedBox(width: 12),
                         Text('ออกจากระบบ', style: TextStyle(color: AppConstants.errorColor)),
                       ],
                     ),
@@ -159,205 +163,245 @@ class _HomeTabState extends State<HomeTab> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
+            // Hero Banner Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(AppConstants.paddingLarge),
+              margin: const EdgeInsets.all(AppConstants.paddingMedium),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     AppConstants.primaryColor,
                     AppConstants.primaryColor.withOpacity(0.8),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
-                borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppConstants.primaryColor.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, _) {
-                      return Text(
-                        'สวัสดี ${authProvider.user?.username ?? 'ผู้ใช้'}!',
-                        style: const TextStyle(
-                          fontSize: AppConstants.fontSizeHeading,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppConstants.paddingSmall),
-                  const Text(
-                    'ยินดีต้อนรับสู่ร้านค้า OTOP ออนไลน์',
-                    style: TextStyle(
-                      fontSize: AppConstants.fontSizeMedium,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: AppConstants.paddingMedium),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Navigate to products tab
-                      if (context.findAncestorStateOfType<_HomeScreenState>() != null) {
-                        context.findAncestorStateOfType<_HomeScreenState>()!.setState(() {
-                          context.findAncestorStateOfType<_HomeScreenState>()!._currentIndex = 1;
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.store, color: AppConstants.primaryColor),
-                    label: const Text(
-                      'เริ่มช้อปปิ้ง',
-                      style: TextStyle(color: AppConstants.primaryColor),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Consumer<AuthProvider>(
+                            builder: (context, authProvider, _) {
+                              return Text(
+                                'สวัสดี ${authProvider.user?.username ?? 'ผู้ใช้'}',
+                                style: const TextStyle(
+                                  fontSize: AppConstants.fontSizeExtraLarge,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'สินค้า OTOP คุณภาพ\nจากทั่วประเทศไทย',
+                            style: TextStyle(
+                              fontSize: AppConstants.fontSizeMedium,
+                              color: Colors.white,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () => _navigateToTab(1),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: AppConstants.primaryColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                            ),
+                            child: const Text(
+                              'เริ่มช้อปปิ้ง',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: AppConstants.fontSizeMedium,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const Icon(
+                      Icons.store_outlined,
+                      size: 80,
+                      color: Colors.white24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Quick Access Menu
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickMenuItem(
+                      context,
+                      icon: Icons.category_outlined,
+                      label: 'หมวดหมู่',
+                      onTap: () => _navigateToTab(1),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickMenuItem(
+                      context,
+                      icon: Icons.shopping_cart_outlined,
+                      label: 'ตะกร้าสินค้า',
+                      onTap: () => _navigateToTab(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickMenuItem(
+                      context,
+                      icon: Icons.receipt_long_outlined,
+                      label: 'คำสั่งซื้อ',
+                      onTap: () => _navigateToTab(3),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: AppConstants.paddingLarge),
-
-            // Quick Actions
-            const Text(
-              'เมนูหลัก',
-              style: TextStyle(
-                fontSize: AppConstants.fontSizeExtraLarge,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppConstants.paddingMedium),
-            
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: AppConstants.paddingMedium,
-              mainAxisSpacing: AppConstants.paddingMedium,
-              children: [
-                _buildQuickActionCard(
-                  context,
-                  icon: Icons.store,
-                  title: 'สินค้าทั้งหมด',
-                  subtitle: 'ดูสินค้า OTOP',
-                  color: AppConstants.primaryColor,
-                  onTap: () => _navigateToTab(1),
-                ),
-                _buildQuickActionCard(
-                  context,
-                  icon: Icons.shopping_cart,
-                  title: 'ตะกร้าสินค้า',
-                  subtitle: 'ดูของในตะกร้า',
-                  color: AppConstants.successColor,
-                  onTap: () => _navigateToTab(2),
-                ),
-                _buildQuickActionCard(
-                  context,
-                  icon: Icons.receipt_long,
-                  title: 'คำสั่งซื้อ',
-                  subtitle: 'ประวัติการสั่งซื้อ',
-                  color: AppConstants.warningColor,
-                  onTap: () => _navigateToTab(3),
-                ),
-                _buildQuickActionCard(
-                  context,
-                  icon: Icons.person,
-                  title: 'โปรไฟล์',
-                  subtitle: 'จัดการบัญชี',
-                  color: AppConstants.secondaryColor,
-                  onTap: () => _navigateToTab(4),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppConstants.paddingLarge),
+            const SizedBox(height: 32),
 
             // Featured Products Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'สินค้าแนะนำ',
-                  style: TextStyle(
-                    fontSize: AppConstants.fontSizeExtraLarge,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _navigateToTab(1),
-                  child: const Text('ดูทั้งหมด'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppConstants.paddingMedium),
-
-            // Featured Products List
-            Consumer<ProductProvider>(
-              builder: (context, productProvider, _) {
-                if (productProvider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (productProvider.error != null) {
-                  return Center(
-                    child: Column(
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: AppConstants.errorColor,
+                        const Text(
+                          'สินค้าแนะนำ',
+                          style: TextStyle(
+                            fontSize: AppConstants.fontSizeExtraLarge,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                        const SizedBox(height: AppConstants.paddingSmall),
-                        Text(
-                          'เกิดข้อผิดพลาด: ${productProvider.error}',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppConstants.paddingMedium),
-                        ElevatedButton(
-                          onPressed: () => productProvider.loadProducts(),
-                          child: const Text('ลองใหม่'),
+                        TextButton.icon(
+                          onPressed: () => _navigateToTab(1),
+                          icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                          label: const Text('ดูทั้งหมด'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppConstants.primaryColor,
+                          ),
                         ),
                       ],
                     ),
-                  );
-                }
-
-                final products = productProvider.products.take(4).toList();
-                if (products.isEmpty) {
-                  return const Center(
-                    child: Text('ไม่มีสินค้า'),
-                  );
-                }
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppConstants.paddingSmall,
-                    mainAxisSpacing: AppConstants.paddingSmall,
-                    childAspectRatio: 0.8,
                   ),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final product = products[index];
-                    return _buildProductCard(product);
-                  },
-                );
-              },
+
+                  // Products Grid
+                  Consumer<ProductProvider>(
+                    builder: (context, productProvider, _) {
+                      if (productProvider.isLoading) {
+                        return Container(
+                          height: 200,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (productProvider.error != null) {
+                        return Container(
+                          height: 200,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: AppConstants.errorColor,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'ไม่สามารถโหลดสินค้าได้',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: AppConstants.fontSizeMedium,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () => productProvider.loadProducts(),
+                                  child: const Text('ลองใหม่'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final products = productProvider.products.take(6).toList();
+                      if (products.isEmpty) {
+                        return Container(
+                          height: 200,
+                          child: Center(
+                            child: Text(
+                              'ไม่มีสินค้า',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: AppConstants.fontSizeMedium,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: products.length,
+                          itemBuilder: (context, index) {
+                            final product = products[index];
+                            return _buildProductCard(product);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ],
         ),
@@ -374,55 +418,36 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
-  Widget _buildQuickActionCard(
+  Widget _buildQuickMenuItem(
     BuildContext context, {
     required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
+    required String label,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+              Icon(
+                icon,
+                size: 28,
+                color: AppConstants.primaryColor,
               ),
-              const SizedBox(height: AppConstants.paddingSmall),
+              const SizedBox(height: 8),
               Text(
-                title,
+                label,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppConstants.fontSizeMedium,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppConstants.secondaryColor,
                   fontSize: AppConstants.fontSizeSmall,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -434,43 +459,51 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildProductCard(Product product) {
-    return InkWell(
-      onTap: () {
-        // TODO: Navigate to product detail
-        Helpers.showSnackBar(context, 'เปิดรายละเอียดสินค้า: ${product.name}');
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        ),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      elevation: 3,
+      shadowColor: Colors.black12,
+      child: InkWell(
+        onTap: () {
+          Helpers.showSnackBar(context, 'เปิดรายละเอียดสินค้า: ${product.name}');
+        },
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Product Image
             Expanded(
               flex: 3,
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.grey[100],
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppConstants.borderRadius),
+                    top: Radius.circular(12),
                   ),
                 ),
-                child: ProductImage(
-                  imageUrl: product.image,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppConstants.borderRadius),
+                    top: Radius.circular(12),
+                  ),
+                  child: ProductImage(
+                    imageUrl: product.image,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                   ),
                 ),
               ),
             ),
+            
+            // Product Info
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(AppConstants.paddingSmall),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -482,18 +515,19 @@ class _HomeTabState extends State<HomeTab> {
                           product.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: AppConstants.fontSizeSmall,
+                            fontSize: AppConstants.fontSizeMedium,
+                            color: Colors.black87,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (product.category != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
                             product.category!,
                             style: TextStyle(
-                              color: AppConstants.secondaryColor,
-                              fontSize: AppConstants.fontSizeSmall - 1,
+                              color: Colors.grey[600],
+                              fontSize: AppConstants.fontSizeSmall,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -501,36 +535,40 @@ class _HomeTabState extends State<HomeTab> {
                         ],
                       ],
                     ),
+                    
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          product.formattedPrice,
-                          style: TextStyle(
-                            color: AppConstants.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: AppConstants.fontSizeMedium,
+                        Expanded(
+                          child: Text(
+                            product.formattedPrice,
+                            style: TextStyle(
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: AppConstants.fontSizeMedium,
+                            ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                            horizontal: 8,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: product.inStock 
                                 ? AppConstants.successColor.withOpacity(0.1)
                                 : AppConstants.errorColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            product.inStock ? 'มีสินค้า' : 'หมด',
+                            product.inStock ? 'พร้อม' : 'หมด',
                             style: TextStyle(
                               color: product.inStock 
                                   ? AppConstants.successColor
                                   : AppConstants.errorColor,
-                              fontSize: AppConstants.fontSizeSmall - 2,
-                              fontWeight: FontWeight.w500,
+                              fontSize: AppConstants.fontSizeSmall,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/order.dart';
@@ -109,17 +110,28 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  // Set selected order (เพิ่ม method นี้)
+  void setSelectedOrder(Order order) {
+    _selectedOrder = order;
+    notifyListeners();
+  }
+
   // Create new order
-  Future<Map<String, dynamic>> createOrder(CreateOrderRequest orderRequest) async {
+  Future<Map<String, dynamic>> createOrder(Map<String, dynamic> orderRequest) async {
     try {
       _setLoading(true);
       _setError(null);
 
-      final response = await _api.post(AppConfig.ordersEndpoint, orderRequest.toJson());
+      debugPrint('Creating order with data: $orderRequest');
+
+      final response = await _api.post(AppConfig.createOrderEndpoint, orderRequest);
       
       if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        final newOrder = Order.fromJson(data);
+        final decoded = jsonDecode(response.body);
+
+        final orderJson = decoded['data'] ?? decoded;
+
+        final newOrder = Order.fromJson(orderJson);
         
         // Add to beginning of orders list
         _orders.insert(0, newOrder);

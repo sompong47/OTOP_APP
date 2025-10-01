@@ -11,6 +11,29 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2, // จำนวน tab ที่คุณมี
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Cart'),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'สินค้า'),
+              Tab(text: 'สรุป'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildCartView(context),
+            _buildSummaryView(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartView(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ตะกร้าสินค้า'),
@@ -43,13 +66,10 @@ class CartScreen extends StatelessWidget {
             children: [
               // Cart Items List
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                  itemCount: cartProvider.items.length,
-                  itemBuilder: (context, index) {
-                    final cartItem = cartProvider.items[index];
-                    return _buildCartItem(context, cartItem, cartProvider);
-                  },
+                child: ListView(
+                  children: cartProvider.items
+                      .map((item) => CartItemWidget(cartItem: item))
+                      .toList(),
                 ),
               ),
 
@@ -471,6 +491,236 @@ class CartScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => const CheckoutScreen(),
+      ),
+    );
+  }
+
+  Widget _buildSummaryView(BuildContext context) {
+    return Center(
+      child: Text(
+        'สรุปการสั่งซื้อ',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+    );
+  }
+}
+
+class CartItemWidget extends StatelessWidget {
+  final CartItem cartItem;
+
+  const CartItemWidget({
+    Key? key,
+    required this.cartItem,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppConstants.paddingMedium),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        child: Row(
+          children: [
+            // Product Image
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+              child: cartItem.product.image != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                      child: Image.network(
+                        cartItem.product.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.image, color: Colors.grey);
+                        },
+                      ),
+                    )
+                  : const Icon(Icons.image, color: Colors.grey),
+            ),
+
+            const SizedBox(width: AppConstants.paddingMedium),
+
+            // Product Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cartItem.product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppConstants.fontSizeMedium,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppConstants.paddingSmall),
+                  Text(
+                    'ราคา: ${Helpers.formatPrice(cartItem.product.price)}',
+                    style: TextStyle(
+                      color: AppConstants.secondaryColor,
+                      fontSize: AppConstants.fontSizeSmall,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.paddingSmall),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Quantity Controls
+                      Row(
+                        children: [
+                          _buildQuantityButton(
+                            icon: Icons.remove,
+                            onPressed: () {
+                              if (cartItem.quantity > 1) {
+                                cartProvider.updateQuantity(
+                                  cartItem.product.id,
+                                  cartItem.quantity - 1,
+                                );
+                              } else {
+                                cartProvider.removeItem(cartItem.product.id);
+                              }
+                            },
+                          ),
+                          Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.paddingSmall,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.paddingMedium,
+                              vertical: AppConstants.paddingSmall,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${cartItem.quantity}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: AppConstants.fontSizeMedium,
+                              ),
+                            ),
+                          ),
+                          _buildQuantityButton(
+                            icon: Icons.add,
+                            onPressed: () {
+                              if (cartItem.quantity < cartItem.product.stock) {
+                                cartProvider.updateQuantity(
+                                  cartItem.product.id,
+                                  cartItem.quantity + 1,
+                                );
+                              } else {
+                                Helpers.showWarningSnackBar(
+                                  context,
+                                  'สินค้าเหลือไม่เพียงพอ',
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      // Remove Button
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: AppConstants.errorColor),
+                        onPressed: () => _showRemoveItemDialog(
+                          context,
+                          cartItem,
+                          cartProvider,
+                        ),
+                        tooltip: 'ลบสินค้า',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Total Price
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'รวม',
+                  style: TextStyle(
+                    color: AppConstants.secondaryColor,
+                    fontSize: AppConstants.fontSizeSmall,
+                  ),
+                ),
+                Text(
+                  Helpers.formatPrice(cartItem.totalPrice),
+                  style: TextStyle(
+                    color: AppConstants.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppConstants.fontSizeMedium,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        border: Border.all(color: AppConstants.primaryColor),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Icon(
+          icon,
+          size: 18,
+          color: AppConstants.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveItemDialog(
+    BuildContext context,
+    CartItem cartItem,
+    CartProvider cartProvider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ลบสินค้า'),
+        content: Text('คุณต้องการลบ "${cartItem.product.name}" ออกจากตะกร้าหรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              cartProvider.removeItem(cartItem.product.id);
+              Navigator.of(context).pop();
+              Helpers.showSuccessSnackBar(context, 'ลบสินค้าออกจากตะกร้าแล้ว');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('ลบ'),
+          ),
+        ],
       ),
     );
   }

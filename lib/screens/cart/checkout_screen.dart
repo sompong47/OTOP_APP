@@ -1,3 +1,4 @@
+import 'dart:convert'; // เพิ่มบรรทัดนี้
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
@@ -576,62 +577,64 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     try {
-      // สร้าง order items จาก cart
-      final orderItems = cartProvider.items.map((item) => CreateOrderItem(
-        productId: item.product.id,
-        quantity: item.quantity,
-        variant: null, // เพิ่มถ้ามี variant system
-      )).toList();
+      // สร้าง order items จาก cart พร้อม price
+      final orderItems = cartProvider.items.map((item) => {
+        'product_id': item.product.id,
+        'quantity': item.quantity,
+        'variant': null, // เพิ่มถ้ามี variant system
+        'price': item.product.price, // เพิ่ม price
+      }).toList();
 
-      // สร้าง shipping address
-      final shippingAddress = OrderAddress(
-        fullName: _customerNameController.text.trim(),
-        phone: _customerPhoneController.text.trim(),
-        address: _shippingAddressController.text.trim(),
-        district: _districtController.text.trim(),
-        province: _provinceController.text.trim(),
-        postalCode: _postalCodeController.text.trim(),
-        additionalInfo: _customerEmailController.text.trim().isNotEmpty 
+      // สร้าง shipping address เป็น JSON string
+      final shippingAddress = jsonEncode({
+        'full_name': _customerNameController.text.trim(),
+        'phone': _customerPhoneController.text.trim(),
+        'address': _shippingAddressController.text.trim(),
+        'district': _districtController.text.trim(),
+        'province': _provinceController.text.trim(),
+        'postal_code': _postalCodeController.text.trim(),
+        'additional_info': _customerEmailController.text.trim().isNotEmpty 
             ? 'Email: ${_customerEmailController.text.trim()}' 
             : null,
-      );
+      });
 
-      // สร้าง order request
-      final orderRequest = CreateOrderRequest(
-        items: orderItems,
-        shippingAddress: shippingAddress,
-        paymentMethod: _selectedPaymentMethod,
-        notes: _notesController.text.trim().isNotEmpty 
+      // สร้าง order request data
+      final orderRequest = {
+        'items': orderItems,
+        'shipping_address': shippingAddress,
+        'payment_method': _selectedPaymentMethod,
+        'notes': _notesController.text.trim().isNotEmpty 
             ? _notesController.text.trim() 
             : null,
-      );
+        'customer_name': _customerNameController.text.trim(),
+        'customer_phone': _customerPhoneController.text.trim(),
+        'customer_email': _customerEmailController.text.trim(),
+      };
 
       // เรียก API สร้าง order
       final result = await orderProvider.createOrder(orderRequest);
 
       if (result['success'] == true) {
-        // Clear cart
-        cartProvider.clearCart();
-        
-        // Show success and navigate
-        Helpers.showSuccessSnackBar(context, 'สั่งซื้อสำเร็จ!');
-        
-        // Navigate to order detail
-        final order = result['order'] as Order;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => OrderDetailScreen(
-              orderId: order.id,
-            ),
-          ),
-          (route) => route.isFirst,
-        );
-      } else {
-        Helpers.showErrorSnackBar(
-          context,
-          result['message'] ?? 'ไม่สามารถสร้างคำสั่งซื้อได้',
-        );
-      }
+  cartProvider.clearCart();
+  Helpers.showSuccessSnackBar(context, 'สั่งซื้อสำเร็จ!');
+
+  final order = result['order'] as Order;
+
+  if (!mounted) return;
+
+  // ✅ ส่ง order object ไปเลย
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(
+      builder: (context) => OrderDetailScreen(order: order),
+    ),
+    (route) => route.isFirst,
+  );
+} else {
+  Helpers.showErrorSnackBar(
+    context,
+    result['message'] ?? 'ไม่สามารถสร้างคำสั่งซื้อได้',
+  );
+}
     } catch (e) {
       Helpers.showErrorSnackBar(
         context,

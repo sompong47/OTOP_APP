@@ -3,13 +3,16 @@ import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
+import '../../models/order.dart';
 
 class OrderDetailScreen extends StatefulWidget {
-  final int orderId;
+  final int? orderId;
+  final Order? order;
 
   const OrderDetailScreen({
     super.key,
-    required this.orderId,
+    this.orderId,
+    this.order,
   });
 
   @override
@@ -20,10 +23,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderProvider>(context, listen: false)
-          .loadOrderDetail(widget.orderId);
-    });
+    if (widget.order != null) {
+      // ถ้ามี order object มาแล้ว ให้เซ็ตเลย
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<OrderProvider>(context, listen: false)
+            .setSelectedOrder(widget.order!);
+      });
+    } else if (widget.orderId != null) {
+      // ถ้าไม่มี ให้โหลดจาก API
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<OrderProvider>(context, listen: false)
+            .loadOrderDetail(widget.orderId!);
+      });
+    }
   }
 
   @override
@@ -70,7 +82,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   const SizedBox(height: AppConstants.paddingMedium),
                   ElevatedButton(
-                    onPressed: () => orderProvider.loadOrderDetail(widget.orderId),
+                    onPressed: () => orderProvider.loadOrderDetail(widget.orderId!),
                     child: const Text('ลองใหม่'),
                   ),
                 ],
@@ -86,7 +98,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => orderProvider.loadOrderDetail(widget.orderId),
+            onRefresh: () => orderProvider.loadOrderDetail(widget.orderId!),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppConstants.paddingMedium),
               child: Column(

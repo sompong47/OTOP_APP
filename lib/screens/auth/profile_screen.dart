@@ -5,6 +5,7 @@ import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import 'login_screen.dart';
+import '../seller/seller_dashboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -261,55 +262,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: AppConstants.paddingLarge),
 
                   // Menu Options
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildMenuTile(
-                          icon: Icons.shopping_bag,
-                          title: 'คำสั่งซื้อของฉัน',
-                          subtitle: 'ดูประวัติการสั่งซื้อ',
-                          onTap: () {
-                            // TODO: Navigate to orders screen
-                            Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-                          },
-                        ),
-                        const Divider(height: 1),
-                        _buildMenuTile(
-                          icon: Icons.favorite,
-                          title: 'รายการโปรด',
-                          subtitle: 'สินค้าที่ถูกใจ',
-                          onTap: () {
-                            // TODO: Navigate to favorites screen
-                            Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-                          },
-                        ),
-                        const Divider(height: 1),
-                        _buildMenuTile(
-                          icon: Icons.notifications,
-                          title: 'การแจ้งเตือน',
-                          subtitle: 'ตั้งค่าการแจ้งเตือน',
-                          onTap: () {
-                            // TODO: Navigate to notifications settings
-                            Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-                          },
-                        ),
-                        const Divider(height: 1),
-                        _buildMenuTile(
-                          icon: Icons.help,
-                          title: 'ช่วยเหลือ',
-                          subtitle: 'คำถามที่พบบ่อย',
-                          onTap: () {
-                            // TODO: Navigate to help screen
-                            Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                 Card(
+  elevation: 2,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+  ),
+  child: Column(
+    children: [
+      // เพิ่มเมนูผู้ขายที่ด้านบน
+      _buildMenuTile(
+        icon: Icons.store,
+        title: 'จัดการร้านค้า',
+        subtitle: 'สำหรับผู้ขาย OTOP',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SellerDashboardScreen(),
+            ),
+          );
+        },
+      ),
+      const Divider(height: 1),
+      _buildMenuTile(
+        icon: Icons.shopping_bag,
+        title: 'คำสั่งซื้อของฉัน',
+        subtitle: 'ดูประวัติการสั่งซื้อ',
+        onTap: () {
+          // TODO: Navigate to orders screen
+          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
+        },
+      ),
+      const Divider(height: 1),
+      _buildMenuTile(
+        icon: Icons.favorite,
+        title: 'รายการโปรด',
+        subtitle: 'สินค้าที่ถูกใจ',
+        onTap: () {
+          // TODO: Navigate to favorites screen
+          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
+        },
+      ),
+      const Divider(height: 1),
+      _buildMenuTile(
+        icon: Icons.notifications,
+        title: 'การแจ้งเตือน',
+        subtitle: 'ตั้งค่าการแจ้งเตือน',
+        onTap: () {
+          // TODO: Navigate to notifications settings
+          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
+        },
+      ),
+      const Divider(height: 1),
+      _buildMenuTile(
+        icon: Icons.help,
+        title: 'ช่วยเหลือ',
+        subtitle: 'คำถามที่พบบ่อย',
+        onTap: () {
+          // TODO: Navigate to help screen
+          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
+        },
+      ),
+    ],
+  ),
+),
 
                   const SizedBox(height: AppConstants.paddingLarge),
 

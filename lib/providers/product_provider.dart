@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async'; // เพิ่มบรรทัดนี้
 import '../models/product.dart';
 import '../services/product_service.dart';
 
@@ -16,6 +17,24 @@ class ProductProvider with ChangeNotifier {
   bool _hasNextPage = true;
   bool _isLoadingMore = false;
 
+  // Dashboard Statistics
+  double _todaySales = 0.0;
+  double _salesGrowth = 0.0;
+  int _newOrders = 0;
+  int _pendingOrders = 0;
+  int _totalProducts = 0;
+  int _lowStockProducts = 0;
+  double _averageRating = 0.0;
+  int _totalReviews = 0;
+  List<Map<String, dynamic>> _recentActivities = [];
+
+  // เพิ่ม method สำหรับ safe notify
+  void _safeNotifyListeners() {
+    scheduleMicrotask(() {
+      notifyListeners();
+    });
+  }
+
   // Getters
   List<Product> get products => _products;
   List<Product> get categories => _categories;
@@ -24,6 +43,83 @@ class ProductProvider with ChangeNotifier {
   bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
   bool get hasNextPage => _hasNextPage;
+
+  // Dashboard Getters
+  double get todaySales => _todaySales;
+  double get salesGrowth => _salesGrowth;
+  int get newOrders => _newOrders;
+  int get pendingOrders => _pendingOrders;
+  int get totalProducts => _totalProducts;
+  int get lowStockProducts => _lowStockProducts;
+  double get averageRating => _averageRating;
+  int get totalReviews => _totalReviews;
+  List<Map<String, dynamic>> get recentActivities => _recentActivities;
+
+  // Load seller dashboard data
+  Future<void> loadSellerDashboardData() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
+
+      // Load dashboard statistics from API
+      final result = await _productService.getSellerDashboard();
+      
+      if (result['success'] == true) {
+        final data = result['data'];
+        
+        // Update dashboard statistics
+        _todaySales = (data['today_sales'] ?? 0.0).toDouble();
+        _salesGrowth = (data['sales_growth'] ?? 0.0).toDouble();
+        _newOrders = data['new_orders'] ?? 0;
+        _pendingOrders = data['pending_orders'] ?? 0;
+        _totalProducts = data['total_products'] ?? 0;
+        _lowStockProducts = data['low_stock_products'] ?? 0;
+        _averageRating = (data['average_rating'] ?? 0.0).toDouble();
+        _totalReviews = data['total_reviews'] ?? 0;
+        
+        // Parse recent activities
+        if (data['recent_activities'] != null) {
+          _recentActivities = List<Map<String, dynamic>>.from(
+            data['recent_activities'].map((activity) => Map<String, dynamic>.from(activity))
+          );
+        } else {
+          _recentActivities = [];
+        }
+        
+        debugPrint('Dashboard data loaded successfully');
+        debugPrint('Today sales: $_todaySales, Total products: $_totalProducts');
+        
+      } else {
+        _error = result['message'] ?? 'ไม่สามารถโหลดข้อมูล Dashboard ได้';
+        
+        // Set default values if API fails
+        _setDefaultDashboardData();
+      }
+    } catch (e) {
+      _error = 'เกิดข้อผิดพลาด: $e';
+      debugPrint('Error loading dashboard data: $e');
+      
+      // Set default values if error occurs
+      _setDefaultDashboardData();
+    } finally {
+      _isLoading = false;
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
+    }
+  }
+
+  // Set default dashboard data (fallback)
+  void _setDefaultDashboardData() {
+    _todaySales = 0.0;
+    _salesGrowth = 0.0;
+    _newOrders = 0;
+    _pendingOrders = 0;
+    _totalProducts = _products.length;
+    _lowStockProducts = _products.where((p) => (p.stock ?? 0) < 10).length;
+    _averageRating = 0.0;
+    _totalReviews = 0;
+    _recentActivities = [];
+  }
 
   // Load products
   Future<void> loadProducts({String? search, String? ordering, bool refresh = false}) async {
@@ -36,7 +132,7 @@ class ProductProvider with ChangeNotifier {
 
       _isLoading = true;
       _error = null;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
 
       final params = <String, String>{
         'page': _currentPage.toString(),
@@ -82,7 +178,7 @@ class ProductProvider with ChangeNotifier {
             _hasNextPage = false;
           }
         } else if (data is List) {
-          // ✅ แก้ปัญหาตรงนี้ - Direct array response
+          // Direct array response
           debugPrint('Direct array response format');
           debugPrint('Raw API response: $data');
           
@@ -99,13 +195,12 @@ class ProductProvider with ChangeNotifier {
               })
               .toList();
           
-          // ✅ สำคัญ: ตรวจสอบว่ามี product ใหม่หรือไม่
+          // Check if we have more products
           if (newProducts.isEmpty) {
             _hasNextPage = false;
           } else {
-            // ถ้าได้ products น้อยกว่า expected page size (เช่น 20) = หน้าสุดท้าย
-            // หรือตั้งให้ load หน้าต่อไปและดูว่าได้ข้อมูลหรือไม่
-            if (newProducts.length < 20) { // สมมติ page size = 20
+            // If we got fewer products than expected page size = last page
+            if (newProducts.length < 20) { // Assuming page size = 20
               _hasNextPage = false;
             } else {
               _currentPage++;
@@ -115,11 +210,11 @@ class ProductProvider with ChangeNotifier {
           throw Exception('Unexpected response format: ${data.runtimeType}');
         }
 
-        // ✅ ป้องกันการเพิ่มข้อมูลซ้ำ
+        // Prevent duplicate data
         if (refresh) {
           _products = newProducts;
         } else {
-          // เช็คว่า product ใหม่ซ้ำกับของเดิมหรือไม่
+          // Check for duplicate products
           final existingIds = _products.map((p) => p.id).toSet();
           final uniqueNewProducts = newProducts.where((p) => !existingIds.contains(p.id)).toList();
           
@@ -143,7 +238,7 @@ class ProductProvider with ChangeNotifier {
       debugPrint('Error loading products: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
     }
   }
 
@@ -156,12 +251,12 @@ class ProductProvider with ChangeNotifier {
 
     try {
       _isLoadingMore = true;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
 
       await loadProducts(refresh: false);
     } finally {
       _isLoadingMore = false;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
     }
   }
 
@@ -169,7 +264,7 @@ class ProductProvider with ChangeNotifier {
   Future<void> loadProductDetail(int productId) async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
+    _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
 
     try {
       final result = await _productService.getProduct(productId);
@@ -189,7 +284,7 @@ class ProductProvider with ChangeNotifier {
       debugPrint('Error loading product detail: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
     }
   }
 
@@ -198,7 +293,7 @@ class ProductProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _error = null;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
 
       final result = await _productService.getCategories();
       if (result['success'] == true) {
@@ -223,14 +318,14 @@ class ProductProvider with ChangeNotifier {
       debugPrint('Error loading categories: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
     }
   }
 
   // Clear selected product
   void clearSelectedProduct() {
     _selectedProduct = null;
-    notifyListeners();
+    _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
   }
 
   // Search products
@@ -258,7 +353,19 @@ class ProductProvider with ChangeNotifier {
     _currentPage = 1;
     _hasNextPage = true;
     _isLoadingMore = false;
-    notifyListeners();
+    
+    // Clear dashboard data
+    _todaySales = 0.0;
+    _salesGrowth = 0.0;
+    _newOrders = 0;
+    _pendingOrders = 0;
+    _totalProducts = 0;
+    _lowStockProducts = 0;
+    _averageRating = 0.0;
+    _totalReviews = 0;
+    _recentActivities = [];
+    
+    _safeNotifyListeners(); // แก้ไขจาก notifyListeners()
   }
 
   // Filter products by category
