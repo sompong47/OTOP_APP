@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
+  // App Info
+  static const String version = '1.0.0';
+  static const String appName = 'OTOP Store';
+
   // Colors
   static const Color primaryColor = Color(0xFF2563EB);
   static const Color secondaryColor = Color(0xFF64748B);
@@ -38,23 +42,36 @@ class AppConstants {
   static const Map<String, String> orderStatusThai = {
     'pending': 'รอดำเนินการ',
     'confirmed': 'ยืนยันแล้ว',
+    'processing': 'กำลังเตรียมสินค้า',
     'shipped': 'จัดส่งแล้ว',
     'delivered': 'ส่งถึงแล้ว',
     'cancelled': 'ยกเลิก',
+    'refunded': 'คืนเงินแล้ว',
   };
 
   static const Map<String, Color> orderStatusColors = {
     'pending': Color(0xFFF59E0B),
     'confirmed': Color(0xFF3B82F6),
+    'processing': Color(0xFF6366F1),
     'shipped': Color(0xFF8B5CF6),
     'delivered': Color(0xFF10B981),
     'cancelled': Color(0xFFEF4444),
+    'refunded': Color(0xFF6B7280),
   };
 
   // Payment Methods
   static const Map<String, String> paymentMethodThai = {
     'transfer': 'โอนเงิน',
     'cod': 'เก็บเงินปลายทาง',
+    'card': 'บัตรเครดิต',
+    'wallet': 'กระเป๋าเงินอิเล็กทรอนิกส์',
+  };
+
+  static const Map<String, IconData> paymentMethodIcons = {
+    'transfer': Icons.account_balance,
+    'cod': Icons.local_shipping,
+    'card': Icons.credit_card,
+    'wallet': Icons.account_balance_wallet,
   };
 
   // Validation
@@ -75,4 +92,8 @@ class AppConstants {
   // Pagination
   static const int defaultPageSize = 10;
   static const int maxPageSize = 50;
+
+  // Currency
+  static const String currency = 'บาท';
+  static const String currencySymbol = '฿';
 }
