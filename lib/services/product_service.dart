@@ -1,7 +1,79 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import 'api_service.dart';
+import '../utils/constants.dart';
+import 'storage_service.dart';
+
+class ApiService {
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() => _instance;
+  ApiService._internal();
+
+  final StorageService _storage = StorageService();
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+  Future<Map<String, String>> get _authHeaders async {
+    final headers = Map<String, String>.from(_headers);
+    final token = await _storage.getToken();
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+    return headers;
+  }
+
+  Future<Map<String, String>> getHeaders() async => await _authHeaders;
+
+  Future<http.Response> get(String endpoint) async {
+    final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
+    final headers = await getHeaders();
+    return await http.get(url, headers: headers).timeout(AppConstants.apiTimeout);
+  }
+
+  Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
+    final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
+    final headers = await getHeaders();
+    return await http.post(url, headers: headers, body: jsonEncode(data))
+        .timeout(AppConstants.apiTimeout);
+  }
+
+  Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
+    final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
+    final headers = await getHeaders();
+    return await http.put(url, headers: headers, body: jsonEncode(data))
+        .timeout(AppConstants.apiTimeout);
+  }
+
+  Future<http.Response> delete(String endpoint) async {
+    final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
+    final headers = await getHeaders();
+    return await http.delete(url, headers: headers)
+        .timeout(AppConstants.apiTimeout);
+  }
+
+  Future<http.StreamedResponse> uploadFile(
+    String endpoint,
+    String filePath,
+    String fieldName, {
+    Map<String, String>? additionalFields,
+    String method = 'POST',
+  }) async {
+    final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
+    final request = http.MultipartRequest(method, url);
+    final headers = await getHeaders();
+    request.headers.addAll(headers);
+
+    final file = await http.MultipartFile.fromPath(fieldName, filePath);
+    request.files.add(file);
+
+    if (additionalFields != null) request.fields.addAll(additionalFields);
+
+    return await request.send().timeout(AppConstants.apiTimeout);
+  }
+}
 
 class ProductService {
   static final ProductService _instance = ProductService._internal();
@@ -10,6 +82,8 @@ class ProductService {
 
   final ApiService _api = ApiService();
 
+  // =======================
+  // สินค้าทั้งหมด (หน้าหลัก)
   Future<Map<String, dynamic>> getProducts([Map<String, String>? params]) async {
     try {
       String endpoint = AppConfig.productsEndpoint;
@@ -21,188 +95,169 @@ class ProductService {
       }
 
       final response = await _api.get(endpoint);
-      debugPrint('GET Request URL: ${AppConfig.baseUrl}$endpoint');
-      debugPrint('GET Response Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
+        return {'success': true, 'data': jsonDecode(response.body)};
       } else {
-        return {'success': false, 'message': 'ไม่สามารถโหลดข้อมูลสินค้าได้'};
+        return {'success': false, 'message': 'ไม่สามารถโหลดสินค้าได้'};
       }
     } catch (e) {
-      debugPrint('Error in getProducts: $e');
-      return {'success': false, 'message': 'เกิดข้อผิดพลาด: $e'};
+      debugPrint('getProducts error: $e');
+      return {'success': false, 'message': e.toString()};
     }
   }
 
+  // =======================
+  // สินค้าของผู้ขาย (เฉพาะฉัน)
+  Future<Map<String, dynamic>> getSellerProducts() async {
+    try {
+      final response = await _api.get('seller/products/');
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'message': 'โหลดสินค้าของคุณไม่สำเร็จ'};
+      }
+    } catch (e) {
+      debugPrint('getSellerProducts error: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // =======================
+  // สร้างสินค้า
+  Future<Map<String, dynamic>> createProduct(Map<String, dynamic> data) async {
+    try {
+      if (data['image'] == null) {
+        final response = await _api.post(AppConfig.productsEndpoint, data);
+        if (response.statusCode == 201) {
+          return {'success': true, 'data': jsonDecode(response.body)};
+        } else {
+          return {'success': false, 'message': response.body};
+        }
+      }
+
+      File imageFile = data['image'];
+      data.remove('image');
+
+      final streamedResponse = await _api.uploadFile(
+        AppConfig.productsEndpoint,
+        imageFile.path,
+        'image',
+        additionalFields: data.map((k, v) => MapEntry(k, v.toString())),
+        method: 'POST',
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'message': response.body};
+      }
+    } catch (e) {
+      debugPrint('createProduct error: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // =======================
+  // อัพเดตสินค้า
+  Future<Map<String, dynamic>> updateProduct(int id, Map<String, dynamic> data) async {
+    try {
+      if (data['image'] == null) {
+        final response = await _api.put('${AppConfig.productsEndpoint}$id/', data);
+        if (response.statusCode == 200) {
+          return {'success': true, 'data': jsonDecode(response.body)};
+        } else {
+          return {'success': false, 'message': response.body};
+        }
+      }
+
+      File imageFile = data['image'];
+      data.remove('image');
+
+      final streamedResponse = await _api.uploadFile(
+        '${AppConfig.productsEndpoint}$id/',
+        imageFile.path,
+        'image',
+        additionalFields: data.map((k, v) => MapEntry(k, v.toString())),
+        method: 'PUT',
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'message': response.body};
+      }
+    } catch (e) {
+      debugPrint('updateProduct error: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // =======================
+  // ลบสินค้า
+  Future<Map<String, dynamic>> deleteProduct(int id) async {
+    try {
+      final response = await _api.delete('${AppConfig.productsEndpoint}$id/');
+      if (response.statusCode == 204) {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': response.body};
+      }
+    } catch (e) {
+      debugPrint('deleteProduct error: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // =======================
+  // ดึงข้อมูลแดชบอร์ดผู้ขาย
+  Future<Map<String, dynamic>> getSellerDashboard() async {
+    try {
+      final response = await _api.get('seller/dashboard/');
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        return {'success': false, 'message': 'โหลดแดชบอร์ดไม่สำเร็จ'};
+      }
+    } catch (e) {
+      debugPrint('getSellerDashboard error: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // =======================
+  // ดึงสินค้าตาม id
   Future<Map<String, dynamic>> getProduct(int productId) async {
     try {
       final response = await _api.get('${AppConfig.productsEndpoint}$productId/');
-      debugPrint('GET Request URL: ${AppConfig.baseUrl}${AppConfig.productsEndpoint}$productId/');
-      debugPrint('GET Response Status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
+        return {'success': true, 'data': jsonDecode(response.body)};
       } else {
-        return {'success': false, 'message': 'ไม่พบสินค้านี้'};
+        return {'success': false, 'message': 'โหลดสินค้าไม่สำเร็จ'};
       }
     } catch (e) {
-      debugPrint('Error in getProduct: $e');
-      return {'success': false, 'message': 'เกิดข้อผิดพลาด: $e'};
+      debugPrint('getProduct error: $e');
+      return {'success': false, 'message': e.toString()};
     }
   }
 
+  // =======================
+  // ดึงหมวดหมู่สินค้า
   Future<Map<String, dynamic>> getCategories() async {
     try {
-      final response = await _api.get(AppConfig.categoriesEndpoint);
-      debugPrint('GET Request URL: ${AppConfig.baseUrl}${AppConfig.categoriesEndpoint}');
-      debugPrint('GET Response Status: ${response.statusCode}');
-
+      final response = await _api.get('categories/');
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
+        return {'success': true, 'data': jsonDecode(response.body)};
       } else {
-        return {'success': false, 'message': 'ไม่สามารถโหลดหมวดหมู่ได้'};
+        return {'success': false, 'message': 'โหลดหมวดหมู่ไม่สำเร็จ'};
       }
     } catch (e) {
-      debugPrint('Error in getCategories: $e');
-      return {'success': false, 'message': 'เกิดข้อผิดพลาด: $e'};
+      debugPrint('getCategories error: $e');
+      return {'success': false, 'message': e.toString()};
     }
-  }
-
-  Future<Map<String, dynamic>> getSellerDashboard() async {
-    try {
-      final response = await _api.get(AppConfig.sellerDashboardEndpoint);
-      debugPrint('GET Request URL: ${AppConfig.baseUrl}${AppConfig.sellerDashboardEndpoint}');
-      debugPrint('GET Response Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
-      } else if (response.statusCode == 404) {
-        // API ยังไม่พร้อม ให้ใช้ mock data
-        debugPrint('Dashboard API not found, using mock data');
-        return _getMockDashboardData();
-      } else {
-        return {'success': false, 'message': 'ไม่สามารถโหลดข้อมูล Dashboard ได้'};
-      }
-    } catch (e) {
-      debugPrint('Error in getSellerDashboard: $e');
-      // หาก API ยังไม่พร้อม ให้ใช้ mock data
-      return _getMockDashboardData();
-    }
-  }
-
-  // Mock data สำหรับ dashboard เมื่อ API ยังไม่พร้อม
-  Map<String, dynamic> _getMockDashboardData() {
-    return {
-      'success': true,
-      'data': {
-        'today_sales': 1250.0,
-        'sales_growth': 8.5,
-        'new_orders': 5,
-        'pending_orders': 2,
-        'total_products': 12,
-        'low_stock_products': 1,
-        'average_rating': 4.3,
-        'total_reviews': 23,
-        'recent_activities': [
-          {
-            'type': 'order',
-            'title': 'มีคำสั่งซื้อใหม่',
-            'subtitle': 'ผ้าไหมไทย - 1 ชิ้น',
-            'time': '10 นาทีที่แล้ว'
-          },
-          {
-            'type': 'stock',
-            'title': 'สินค้าเหลือน้อย',
-            'subtitle': 'หอมแดงศรีสะเกษ เหลือ 3 ชิ้น',
-            'time': '1 ชั่วโมงที่แล้ว'
-          },
-          {
-            'type': 'review',
-            'title': 'รีวิวใหม่',
-            'subtitle': 'คะแนน 5 ดาว สำหรับผ้าไหมไทย',
-            'time': '2 ชั่วโมงที่แล้ว'
-          }
-        ]
-      }
-    };
-  }
-
-  // เพิ่ม method สำหรับ orders
-  Future<Map<String, dynamic>> getOrders([Map<String, String>? params]) async {
-    try {
-      String endpoint = '/api/orders/';
-      if (params != null && params.isNotEmpty) {
-        final queryString = params.entries
-            .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
-            .join('&');
-        endpoint += '?$queryString';
-      }
-
-      final response = await _api.get(endpoint);
-      debugPrint('GET Request URL: ${AppConfig.baseUrl}$endpoint');
-      debugPrint('GET Response Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
-      } else if (response.statusCode == 405 || response.statusCode == 404) {
-        // API ยังไม่พร้อม ให้ใช้ mock data
-        return _getMockOrdersData();
-      } else {
-        return {'success': false, 'message': 'ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้'};
-      }
-    } catch (e) {
-      debugPrint('Error in getOrders: $e');
-      return _getMockOrdersData();
-    }
-  }
-
-  // Mock data สำหรับ orders
-  Map<String, dynamic> _getMockOrdersData() {
-    return {
-      'success': true,
-      'data': {
-        'results': [
-          {
-            'id': 1,
-            'order_number': 'ORD-001',
-            'customer_name': 'สมชาย ใจดี',
-            'total': 200.0,
-            'status': 'pending',
-            'created_at': DateTime.now().subtract(Duration(hours: 2)).toIso8601String(),
-            'items': [
-              {
-                'product_name': 'ผ้าไหมไทย',
-                'quantity': 1,
-                'price': 200.0
-              }
-            ]
-          },
-          {
-            'id': 2,
-            'order_number': 'ORD-002',
-            'customer_name': 'สมหญิง ดีใจ',
-            'total': 60.0,
-            'status': 'completed',
-            'created_at': DateTime.now().subtract(Duration(days: 1)).toIso8601String(),
-            'items': [
-              {
-                'product_name': 'หอมแดงศรีสะเกษ',
-                'quantity': 3,
-                'price': 20.0
-              }
-            ]
-          }
-        ],
-        'next': null,
-        'previous': null,
-        'count': 2
-      }
-    };
   }
 }

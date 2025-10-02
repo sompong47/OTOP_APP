@@ -29,12 +29,16 @@ class ApiService {
     return headers;
   }
 
+  // Public method to access headers (for ProductService)
+  Future<Map<String, String>> getHeaders() async {
+    return await _authHeaders;
+  }
+
   // POST without auth (สำหรับ register/login)
   Future<http.Response> postPublic(String endpoint, Map<String, dynamic> data) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
       
-      // Debug logs
       debugPrint('=== API DEBUG ===');
       debugPrint('Request URL: $url');
       debugPrint('Request Headers: $_headers');
@@ -46,21 +50,11 @@ class ApiService {
         body: jsonEncode(data),
       ).timeout(AppConstants.apiTimeout);
       
-      // Debug response
       debugPrint('Response Status: ${response.statusCode}');
-      debugPrint('Response Headers: ${response.headers}');
       debugPrint('Response Body: ${response.body}');
-      debugPrint('=================');
-      
       return response;
-    } on SocketException catch (e) {
-      debugPrint('SocketException: $e');
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException catch (e) {
-      debugPrint('HttpException: $e');
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
-      debugPrint('General Exception: $e');
+      debugPrint('postPublic Exception: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -69,50 +63,28 @@ class ApiService {
   Future<http.Response> get(String endpoint) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final headers = await _authHeaders;
-      
+      final headers = await getHeaders();
       debugPrint('GET Request URL: $url');
-      
-      final response = await http.get(
-        url, 
-        headers: headers,
-      ).timeout(AppConstants.apiTimeout);
-      
+      final response = await http.get(url, headers: headers).timeout(AppConstants.apiTimeout);
       debugPrint('GET Response Status: ${response.statusCode}');
-      
       return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
+      debugPrint('GET Exception: $e');
       throw Exception('Network error: $e');
     }
   }
 
-  // POST with auth (สำหรับ API ที่ต้อง login)
+  // POST with auth
   Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final headers = await _authHeaders;
-      
+      final headers = await getHeaders();
       debugPrint('POST Request URL: $url');
-      debugPrint('POST Request Body: ${jsonEncode(data)}');
-      
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode(data),
-      ).timeout(AppConstants.apiTimeout);
-      
+      final response = await http.post(url, headers: headers, body: jsonEncode(data)).timeout(AppConstants.apiTimeout);
       debugPrint('POST Response Status: ${response.statusCode}');
-      
       return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
+      debugPrint('POST Exception: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -121,42 +93,11 @@ class ApiService {
   Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final headers = await _authHeaders;
-      
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: jsonEncode(data),
-      ).timeout(AppConstants.apiTimeout);
-      
+      final headers = await getHeaders();
+      final response = await http.put(url, headers: headers, body: jsonEncode(data)).timeout(AppConstants.apiTimeout);
       return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
-      throw Exception('Network error: $e');
-    }
-  }
-
-  // PATCH with auth
-  Future<http.Response> patch(String endpoint, Map<String, dynamic> data) async {
-    try {
-      final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final headers = await _authHeaders;
-      
-      final response = await http.patch(
-        url,
-        headers: headers,
-        body: jsonEncode(data),
-      ).timeout(AppConstants.apiTimeout);
-      
-      return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
-    } catch (e) {
+      debugPrint('PUT Exception: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -165,19 +106,11 @@ class ApiService {
   Future<http.Response> delete(String endpoint) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final headers = await _authHeaders;
-      
-      final response = await http.delete(
-        url, 
-        headers: headers,
-      ).timeout(AppConstants.apiTimeout);
-      
+      final headers = await getHeaders();
+      final response = await http.delete(url, headers: headers).timeout(AppConstants.apiTimeout);
       return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
+      debugPrint('DELETE Exception: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -188,49 +121,28 @@ class ApiService {
     String filePath,
     String fieldName, {
     Map<String, String>? additionalFields,
+    String method = 'POST',
   }) async {
     try {
       final url = Uri.parse('${AppConfig.baseUrl}$endpoint');
-      final request = http.MultipartRequest('POST', url);
-      
-      // Add auth headers
-      final headers = await _authHeaders;
+      final request = http.MultipartRequest(method, url);
+      final headers = await getHeaders();
       request.headers.addAll(headers);
-      
+
       // Add file
       final file = await http.MultipartFile.fromPath(fieldName, filePath);
       request.files.add(file);
-      
+
       // Add additional fields
       if (additionalFields != null) {
         request.fields.addAll(additionalFields);
       }
-      
+
       final response = await request.send().timeout(AppConstants.apiTimeout);
       return response;
-    } on SocketException {
-      throw Exception('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } on HttpException {
-      throw Exception('เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
     } catch (e) {
+      debugPrint('Upload file Exception: $e');
       throw Exception('Upload error: $e');
-    }
-  }
-
-  // Check network connectivity
-  Future<bool> checkConnectivity() async {
-    try {
-      // ใช้ root endpoint ตรวจสอบ
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/'),
-        headers: _headers,
-      ).timeout(const Duration(seconds: 5));
-      
-      debugPrint('Connectivity check: ${response.statusCode}');
-      return response.statusCode < 500;
-    } catch (e) {
-      debugPrint('Connectivity check failed: $e');
-      return false;
     }
   }
 }

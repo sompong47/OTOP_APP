@@ -12,9 +12,10 @@ class AppConfig {
   static const String loginEndpoint = 'token/';
   static const String registerEndpoint = 'register/';
   static const String productsEndpoint = 'products/';
+  static const String sellerProductsEndpoint = 'seller/products/'; // สำหรับ seller
   static const String categoriesEndpoint = 'categories/';
   static const String ordersEndpoint = 'orders/';
-  static const String createOrderEndpoint = 'orders/create/'; // ✅ เพิ่มบรรทัดนี้
+  static const String createOrderEndpoint = 'orders/create/';
   static const String profileEndpoint = 'profile/';
   static const String sellerDashboardEndpoint = 'seller/dashboard/';
   
