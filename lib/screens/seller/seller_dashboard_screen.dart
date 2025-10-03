@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/product_provider.dart'; // เพิ่มบรรทัดนี้
+import '../../providers/product_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import 'seller_product_screen.dart';
@@ -15,15 +15,27 @@ class SellerDashboardScreen extends StatefulWidget {
 }
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isInitialized) {
+        _loadInitialData();
+        _isInitialized = true;
+      }
+    });
   }
 
   Future<void> _loadInitialData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    await productProvider.loadSellerDashboardData();
+    
+    // โหลดทั้ง dashboard data และ seller products
+    await Future.wait([
+      productProvider.loadSellerDashboardData(),
+      productProvider.loadSellerProducts(refresh: true),
+    ]);
   }
 
   @override
@@ -51,10 +63,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 onSelected: (value) {
                   switch (value) {
                     case 'profile':
-                      // TODO: Navigate to seller profile
+                      Helpers.showSnackBar(context, 'กำลังพัฒนาฟีเจอร์โปรไฟล์...');
                       break;
                     case 'settings':
-                      // TODO: Navigate to seller settings
+                      Helpers.showSnackBar(context, 'กำลังพัฒนาฟีเจอร์ตั้งค่า...');
                       break;
                     case 'logout':
                       _handleLogout(authProvider);
@@ -99,33 +111,32 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome Section
-              _buildWelcomeSection(),
-              
-              const SizedBox(height: AppConstants.paddingLarge),
-              
-              // Statistics Cards
-              _buildStatisticsCards(),
-              
-              const SizedBox(height: AppConstants.paddingLarge),
-              
-              // Quick Actions
-              _buildQuickActions(),
-              
-              const SizedBox(height: AppConstants.paddingLarge),
-              
-              // Recent Activities
-              _buildRecentActivities(),
-            ],
-          ),
-        ),
+      body: Consumer<ProductProvider>(
+        builder: (context, productProvider, _) {
+          if (productProvider.isLoading && !_isInitialized) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return RefreshIndicator(
+            onRefresh: _refreshData,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWelcomeSection(),
+                  const SizedBox(height: AppConstants.paddingLarge),
+                  _buildStatisticsCards(),
+                  const SizedBox(height: AppConstants.paddingLarge),
+                  _buildQuickActions(),
+                  const SizedBox(height: AppConstants.paddingLarge),
+                  _buildRecentActivities(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -146,6 +157,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            boxShadow: [
+              BoxShadow(
+                color: AppConstants.primaryColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,11 +187,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               const SizedBox(height: AppConstants.paddingMedium),
               Row(
                 children: [
-                  const Icon(
-                    Icons.verified_user,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  const Icon(Icons.verified_user, color: Colors.white, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     'ร้านค้าได้รับการยืนยันแล้ว',
@@ -205,7 +219,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               ),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
-            
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -234,6 +247,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   icon: Icons.inventory,
                   color: AppConstants.warningColor,
                   subtitle: '${productProvider.lowStockProducts} เหลือน้อย',
+                  onTap: _navigateToProducts,
                 ),
                 _buildStatCard(
                   title: 'คะแนนร้าน',
@@ -256,8 +270,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     required IconData icon,
     required Color color,
     String? subtitle,
+    VoidCallback? onTap,
   }) {
-    return Card(
+    final card = Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
@@ -277,11 +292,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
                 Text(
                   value,
@@ -315,6 +326,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+        child: card,
+      );
+    }
+    return card;
   }
 
   Widget _buildQuickActions() {
@@ -329,7 +349,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.paddingMedium),
-        
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
@@ -343,28 +362,28 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               subtitle: 'เพิ่ม แก้ไข ลบสินค้า',
               icon: Icons.inventory_2,
               color: AppConstants.primaryColor,
-              onTap: () => _navigateToProducts(),
+              onTap: _navigateToProducts,
             ),
             _buildActionCard(
               title: 'คำสั่งซื้อ',
               subtitle: 'ดูและจัดการออร์เดอร์',
               icon: Icons.receipt_long,
               color: AppConstants.successColor,
-              onTap: () => _navigateToOrders(),
+              onTap: _navigateToOrders,
             ),
             _buildActionCard(
               title: 'รีวิวและคะแนน',
               subtitle: 'ความคิดเห็นลูกค้า',
               icon: Icons.star_rate,
               color: Colors.orange,
-              onTap: () => _navigateToReviews(),
+              onTap: _navigateToReviews,
             ),
             _buildActionCard(
               title: 'รายงานการขาย',
               subtitle: 'วิเคราะห์ยอดขาย',
               icon: Icons.analytics,
               color: AppConstants.warningColor,
-              onTap: () => _navigateToReports(),
+              onTap: _navigateToReports,
             ),
           ],
         ),
@@ -388,47 +407,39 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
         child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center, // Center the content vertically
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
+                child: Icon(icon, color: color, size: 18),
               ),
-              const SizedBox(height: AppConstants.paddingSmall),
-              Flexible( // Use Flexible instead of Expanded
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppConstants.fontSizeMedium,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2), // Reduce spacing
-              Flexible( // Use Flexible instead of Expanded
-                child: Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppConstants.secondaryColor,
-                    fontSize: AppConstants.fontSizeSmall,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 1),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: AppConstants.secondaryColor,
+                  fontSize: 10.5,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -441,7 +452,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     return Consumer<ProductProvider>(
       builder: (context, productProvider, _) {
         final activities = productProvider.recentActivities;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -453,7 +464,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               ),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
-            
             if (activities.isEmpty)
               Card(
                 child: Padding(
@@ -461,11 +471,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
+                        Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
                         const SizedBox(height: AppConstants.paddingSmall),
                         Text(
                           'ยังไม่มีกิจกรรม',
@@ -487,14 +493,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     children: activities.asMap().entries.map((entry) {
                       final index = entry.key;
                       final activity = entry.value;
-                      
+
                       return Column(
                         children: [
                           _buildActivityItem(
                             icon: _getActivityIcon(activity['type']),
-                            title: activity['title'],
-                            subtitle: activity['subtitle'],
-                            time: activity['time'],
+                            title: activity['title'] ?? '',
+                            subtitle: activity['subtitle'] ?? '',
+                            time: activity['time'] ?? '',
                             color: _getActivityColor(activity['type']),
                           ),
                           if (index < activities.length - 1) const Divider(),
@@ -510,7 +516,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
-  IconData _getActivityIcon(String type) {
+  IconData _getActivityIcon(dynamic type) {
     switch (type) {
       case 'order':
         return Icons.shopping_cart;
@@ -525,7 +531,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     }
   }
 
-  Color _getActivityColor(String type) {
+  Color _getActivityColor(dynamic type) {
     switch (type) {
       case 'order':
         return AppConstants.primaryColor;
@@ -558,11 +564,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: AppConstants.paddingMedium),
           Expanded(
@@ -599,14 +601,36 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   Future<void> _refreshData() async {
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    await productProvider.loadSellerDashboardData();
+    await _loadInitialData();
   }
 
   Future<void> _handleLogout(AuthProvider authProvider) async {
-    await authProvider.logout();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/login');
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการออกจากระบบ'),
+        content: const Text('คุณต้องการออกจากระบบหรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.errorColor,
+            ),
+            child: const Text('ออกจากระบบ'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await authProvider.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 

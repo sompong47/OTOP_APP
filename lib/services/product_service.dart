@@ -82,8 +82,6 @@ class ProductService {
 
   final ApiService _api = ApiService();
 
-  // =======================
-  // สินค้าทั้งหมด (หน้าหลัก)
   Future<Map<String, dynamic>> getProducts([Map<String, String>? params]) async {
     try {
       String endpoint = AppConfig.productsEndpoint;
@@ -107,8 +105,6 @@ class ProductService {
     }
   }
 
-  // =======================
-  // สินค้าของผู้ขาย (เฉพาะฉัน)
   Future<Map<String, dynamic>> getSellerProducts() async {
     try {
       final response = await _api.get('seller/products/');
@@ -123,31 +119,54 @@ class ProductService {
     }
   }
 
-  // =======================
-  // สร้างสินค้า
+  // ✅ แก้ไข createProduct - รองรับทั้งมีรูปและไม่มีรูป
   Future<Map<String, dynamic>> createProduct(Map<String, dynamic> data) async {
     try {
+      debugPrint('📤 Creating product with data: $data');
+      
+      // ถ้าไม่มีรูป ส่งเป็น JSON ธรรมดา
       if (data['image'] == null) {
-        final response = await _api.post(AppConfig.productsEndpoint, data);
+        // ลบ key ที่เป็น null ออก
+        data.removeWhere((key, value) => value == null);
+        
+        final response = await _api.post('seller/products/', data);
+        debugPrint('📥 Response status: ${response.statusCode}');
+        debugPrint('📥 Response body: ${response.body}');
+        
         if (response.statusCode == 201) {
           return {'success': true, 'data': jsonDecode(response.body)};
         } else {
-          return {'success': false, 'message': response.body};
+          final errorBody = response.body;
+          debugPrint('❌ Error response: $errorBody');
+          return {'success': false, 'message': errorBody};
         }
       }
 
+      // ถ้ามีรูป ใช้ multipart
       File imageFile = data['image'];
       data.remove('image');
 
+      // ✅ แปลงเฉพาะ field ที่เป็น string เท่านั้น
+      final fields = <String, String>{};
+      data.forEach((key, value) {
+        if (value != null) {
+          fields[key] = value.toString();
+        }
+      });
+
+      debugPrint('📤 Uploading with fields: $fields');
+
       final streamedResponse = await _api.uploadFile(
-        AppConfig.productsEndpoint,
+        'seller/products/',
         imageFile.path,
         'image',
-        additionalFields: data.map((k, v) => MapEntry(k, v.toString())),
+        additionalFields: fields,
         method: 'POST',
       );
 
       final response = await http.Response.fromStream(streamedResponse);
+      debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         return {'success': true, 'data': jsonDecode(response.body)};
@@ -155,17 +174,23 @@ class ProductService {
         return {'success': false, 'message': response.body};
       }
     } catch (e) {
-      debugPrint('createProduct error: $e');
+      debugPrint('❌ createProduct error: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  // =======================
-  // อัพเดตสินค้า
+  // ✅ แก้ไข updateProduct เช่นเดียวกัน
   Future<Map<String, dynamic>> updateProduct(int id, Map<String, dynamic> data) async {
     try {
+      debugPrint('📤 Updating product $id with data: $data');
+      
       if (data['image'] == null) {
-        final response = await _api.put('${AppConfig.productsEndpoint}$id/', data);
+        data.removeWhere((key, value) => value == null);
+        
+        final response = await _api.put('seller/products/$id/', data);
+        debugPrint('📥 Response status: ${response.statusCode}');
+        debugPrint('📥 Response body: ${response.body}');
+        
         if (response.statusCode == 200) {
           return {'success': true, 'data': jsonDecode(response.body)};
         } else {
@@ -176,32 +201,37 @@ class ProductService {
       File imageFile = data['image'];
       data.remove('image');
 
+      final fields = <String, String>{};
+      data.forEach((key, value) {
+        if (value != null) {
+          fields[key] = value.toString();
+        }
+      });
+
       final streamedResponse = await _api.uploadFile(
-        '${AppConfig.productsEndpoint}$id/',
+        'seller/products/$id/',
         imageFile.path,
         'image',
-        additionalFields: data.map((k, v) => MapEntry(k, v.toString())),
+        additionalFields: fields,
         method: 'PUT',
       );
 
       final response = await http.Response.fromStream(streamedResponse);
-
+      
       if (response.statusCode == 200) {
         return {'success': true, 'data': jsonDecode(response.body)};
       } else {
         return {'success': false, 'message': response.body};
       }
     } catch (e) {
-      debugPrint('updateProduct error: $e');
+      debugPrint('❌ updateProduct error: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  // =======================
-  // ลบสินค้า
   Future<Map<String, dynamic>> deleteProduct(int id) async {
     try {
-      final response = await _api.delete('${AppConfig.productsEndpoint}$id/');
+      final response = await _api.delete('seller/products/$id/');
       if (response.statusCode == 204) {
         return {'success': true};
       } else {
@@ -213,8 +243,6 @@ class ProductService {
     }
   }
 
-  // =======================
-  // ดึงข้อมูลแดชบอร์ดผู้ขาย
   Future<Map<String, dynamic>> getSellerDashboard() async {
     try {
       final response = await _api.get('seller/dashboard/');
@@ -229,8 +257,6 @@ class ProductService {
     }
   }
 
-  // =======================
-  // ดึงสินค้าตาม id
   Future<Map<String, dynamic>> getProduct(int productId) async {
     try {
       final response = await _api.get('${AppConfig.productsEndpoint}$productId/');
@@ -245,8 +271,6 @@ class ProductService {
     }
   }
 
-  // =======================
-  // ดึงหมวดหมู่สินค้า
   Future<Map<String, dynamic>> getCategories() async {
     try {
       final response = await _api.get('categories/');
