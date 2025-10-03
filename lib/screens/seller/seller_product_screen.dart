@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/product_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../utils/validators.dart';
@@ -24,55 +22,48 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F7FB),
       appBar: AppBar(
         title: const Text('จัดการสินค้า'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7B1FA2), Color(0xFF3949AB)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             onSelected: (value) {
               setState(() {
                 _selectedFilter = value;
               });
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'all',
-                child: Text('ทั้งหมด'),
-              ),
-              PopupMenuItem(
-                value: 'active',
-                child: Text('เปิดขาย'),
-              ),
-              PopupMenuItem(
-                value: 'inactive',
-                child: Text('ปิดขาย'),
-              ),
-              PopupMenuItem(
-                value: 'low_stock',
-                child: Text('สินค้าใกล้หมด'),
-              ),
+              PopupMenuItem(value: 'all', child: Text('ทั้งหมด')),
+              PopupMenuItem(value: 'active', child: Text('เปิดขาย')),
+              PopupMenuItem(value: 'inactive', child: Text('ปิดขาย')),
+              PopupMenuItem(value: 'low_stock', child: Text('สินค้าใกล้หมด')),
             ],
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddProductDialog(context),
-        backgroundColor: AppConstants.primaryColor,
+        backgroundColor: const Color(0xFF7B1FA2),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('เพิ่มสินค้า'),
       ),
       body: Column(
         children: [
-          // Stats Summary
           _buildStatsSummary(),
-          
-          // Products List
-          Expanded(
-            child: _buildProductsList(),
-          ),
+          Expanded(child: _buildProductsList()),
         ],
       ),
     );
@@ -87,7 +78,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             child: _buildStatCard(
               title: 'สินค้าทั้งหมด',
               value: '25',
-              color: AppConstants.primaryColor,
+              color1: const Color(0xFF7B1FA2),
+              color2: const Color(0xFF9C27B0),
               icon: Icons.inventory,
             ),
           ),
@@ -96,7 +88,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             child: _buildStatCard(
               title: 'เปิดขาย',
               value: '20',
-              color: AppConstants.successColor,
+              color1: const Color(0xFF43A047),
+              color2: const Color(0xFF66BB6A),
               icon: Icons.visibility,
             ),
           ),
@@ -105,7 +98,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             child: _buildStatCard(
               title: 'ใกล้หมด',
               value: '5',
-              color: AppConstants.warningColor,
+              color1: const Color(0xFFFFA000),
+              color2: const Color(0xFFFFB74D),
               icon: Icons.warning,
             ),
           ),
@@ -117,33 +111,40 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Widget _buildStatCard({
     required String title,
     required String value,
-    required Color color,
+    required Color color1,
+    required Color color2,
     required IconData icon,
   }) {
     return Card(
-      child: Padding(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [color1.withOpacity(0.85), color2.withOpacity(0.85)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
-            const SizedBox(height: AppConstants.paddingSmall),
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 6),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppConstants.fontSizeLarge,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Colors.white,
               ),
             ),
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppConstants.fontSizeSmall,
-                color: AppConstants.secondaryColor,
+                color: Colors.white70,
               ),
               textAlign: TextAlign.center,
             ),
@@ -154,7 +155,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   }
 
   Widget _buildProductsList() {
-    // Mock data for demonstration
     final products = _getMockProducts();
     final filteredProducts = _filterProducts(products);
 
@@ -163,11 +163,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.inventory_2_outlined,
-              size: 80,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.inventory_2_outlined,
+                size: 80, color: Colors.grey),
             const SizedBox(height: AppConstants.paddingMedium),
             const Text(
               'ยังไม่มีสินค้า',
@@ -180,9 +177,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             const SizedBox(height: AppConstants.paddingSmall),
             Text(
               'เริ่มเพิ่มสินค้าแรกของคุณ',
-              style: TextStyle(
-                color: AppConstants.secondaryColor,
-              ),
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -194,10 +189,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       child: ListView.builder(
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         itemCount: filteredProducts.length,
-        itemBuilder: (context, index) {
-          final product = filteredProducts[index];
-          return _buildProductCard(product);
-        },
+        itemBuilder: (context, index) =>
+            _buildProductCard(filteredProducts[index]),
       ),
     );
   }
@@ -208,6 +201,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final isLowStock = stock < 10;
 
     return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.only(bottom: AppConstants.paddingMedium),
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
@@ -223,14 +218,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               ),
               child: const Icon(Icons.image, color: Colors.grey),
             ),
-            
             const SizedBox(width: AppConstants.paddingMedium),
-            
-            // Product Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title & Status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -245,21 +238,20 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppConstants.paddingSmall,
-                          vertical: 2,
-                        ),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isActive 
-                              ? AppConstants.successColor.withOpacity(0.1)
-                              : AppConstants.errorColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                          color: isActive
+                              ? const Color(0xFF43A047).withOpacity(0.1)
+                              : const Color(0xFFD32F2F).withOpacity(0.1),
+                          borderRadius:
+                              BorderRadius.circular(AppConstants.borderRadius),
                         ),
                         child: Text(
                           isActive ? 'เปิดขาย' : 'ปิดขาย',
                           style: TextStyle(
-                            color: isActive 
-                                ? AppConstants.successColor
-                                : AppConstants.errorColor,
+                            color: isActive
+                                ? const Color(0xFF43A047)
+                                : const Color(0xFFD32F2F),
                             fontSize: AppConstants.fontSizeSmall,
                             fontWeight: FontWeight.bold,
                           ),
@@ -270,8 +262,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   const SizedBox(height: AppConstants.paddingSmall),
                   Text(
                     Helpers.formatPrice(product['price']),
-                    style: TextStyle(
-                      color: AppConstants.primaryColor,
+                    style: const TextStyle(
+                      color: Color(0xFF7B1FA2),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -282,9 +274,9 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       Text(
                         'คงเหลือ: $stock ชิ้น',
                         style: TextStyle(
-                          color: isLowStock 
-                              ? AppConstants.warningColor
-                              : AppConstants.secondaryColor,
+                          color: isLowStock
+                              ? const Color(0xFFFFA000)
+                              : Colors.grey[700],
                           fontWeight: isLowStock ? FontWeight.bold : null,
                         ),
                       ),
@@ -292,26 +284,29 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit, size: 20),
-                            onPressed: () => _showEditProductDialog(context, product),
+                            onPressed: () =>
+                                _showEditProductDialog(context, product),
                             tooltip: 'แก้ไข',
-                            color: AppConstants.primaryColor,
+                            color: const Color(0xFF7B1FA2),
                           ),
                           IconButton(
                             icon: Icon(
-                              isActive ? Icons.visibility_off : Icons.visibility,
-                              size: 20,
-                            ),
+                                isActive
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 20),
                             onPressed: () => _toggleProductStatus(product),
                             tooltip: isActive ? 'ปิดขาย' : 'เปิดขาย',
-                            color: isActive 
-                                ? AppConstants.warningColor
-                                : AppConstants.successColor,
+                            color: isActive
+                                ? const Color(0xFFFFA000)
+                                : const Color(0xFF43A047),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, size: 20),
-                            onPressed: () => _showDeleteConfirmation(context, product),
+                            onPressed: () =>
+                                _showDeleteConfirmation(context, product),
                             tooltip: 'ลบ',
-                            color: AppConstants.errorColor,
+                            color: const Color(0xFFD32F2F),
                           ),
                         ],
                       ),
@@ -334,7 +329,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         'price': 1500.0,
         'stock': 15,
         'is_active': true,
-        'category': 'ผ้าไหม',
+        'category': 'ผ้าไหม'
       },
       {
         'id': 2,
@@ -342,7 +337,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         'price': 850.0,
         'stock': 3,
         'is_active': true,
-        'category': 'เครื่องปั้น',
+        'category': 'เครื่องปั้น'
       },
       {
         'id': 3,
@@ -350,12 +345,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         'price': 250.0,
         'stock': 25,
         'is_active': false,
-        'category': 'ของใช้ไม้ไผ่',
+        'category': 'ของใช้ไม้ไผ่'
       },
     ];
   }
 
-  List<Map<String, dynamic>> _filterProducts(List<Map<String, dynamic>> products) {
+  List<Map<String, dynamic>> _filterProducts(
+      List<Map<String, dynamic>> products) {
     switch (_selectedFilter) {
       case 'active':
         return products.where((p) => p['is_active'] == true).toList();
@@ -369,22 +365,18 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   }
 
   Future<void> _refreshProducts() async {
-    // TODO: Implement product refresh
     await Future.delayed(const Duration(seconds: 2));
   }
 
-  void _showAddProductDialog(BuildContext context) {
-    _showProductDialog(context, null);
-  }
-
-  void _showEditProductDialog(BuildContext context, Map<String, dynamic> product) {
-    _showProductDialog(context, product);
-  }
+  void _showAddProductDialog(BuildContext context) =>
+      _showProductDialog(context, null);
+  void _showEditProductDialog(
+          BuildContext context, Map<String, dynamic> product) =>
+      _showProductDialog(context, product);
 
   void _showProductDialog(BuildContext context, Map<String, dynamic>? product) {
     final isEdit = product != null;
     final titleText = isEdit ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า';
-    
     showDialog(
       context: context,
       builder: (context) => ProductFormDialog(
@@ -392,11 +384,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         product: product,
         onSave: (productData) {
           Navigator.of(context).pop();
-          if (isEdit) {
+          if (isEdit)
             _updateProduct(productData);
-          } else {
+          else
             _addProduct(productData);
-          }
         },
       ),
     );
@@ -404,20 +395,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
   void _toggleProductStatus(Map<String, dynamic> product) {
     final isActive = product['is_active'] as bool;
-    final newStatus = !isActive;
-    
-    // TODO: Implement API call to update product status
-    setState(() {
-      product['is_active'] = newStatus;
-    });
-    
+    setState(() => product['is_active'] = !isActive);
     Helpers.showSuccessSnackBar(
-      context,
-      newStatus ? 'เปิดขายสินค้าแล้ว' : 'ปิดขายสินค้าแล้ว',
-    );
+        context, isActive ? 'ปิดขายสินค้าแล้ว' : 'เปิดขายสินค้าแล้ว');
   }
 
-  void _showDeleteConfirmation(BuildContext context, Map<String, dynamic> product) {
+  void _showDeleteConfirmation(
+      BuildContext context, Map<String, dynamic> product) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -425,18 +409,16 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         content: Text('คุณต้องการลบสินค้า "${product['name']}" หรือไม่?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ยกเลิก'),
-          ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('ยกเลิก')),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               _deleteProduct(product);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.errorColor,
-              foregroundColor: Colors.white,
-            ),
+                backgroundColor: const Color(0xFFD32F2F),
+                foregroundColor: Colors.white),
             child: const Text('ลบ'),
           ),
         ],
@@ -444,20 +426,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     );
   }
 
-  void _addProduct(Map<String, dynamic> productData) {
-    // TODO: Implement API call to add product
-    Helpers.showSuccessSnackBar(context, 'เพิ่มสินค้าสำเร็จ');
-  }
-
-  void _updateProduct(Map<String, dynamic> productData) {
-    // TODO: Implement API call to update product
-    Helpers.showSuccessSnackBar(context, 'แก้ไขสินค้าสำเร็จ');
-  }
-
-  void _deleteProduct(Map<String, dynamic> product) {
-    // TODO: Implement API call to delete product
-    Helpers.showSuccessSnackBar(context, 'ลบสินค้าสำเร็จ');
-  }
+  void _addProduct(Map<String, dynamic> productData) =>
+      Helpers.showSuccessSnackBar(context, 'เพิ่มสินค้าสำเร็จ');
+  void _updateProduct(Map<String, dynamic> productData) =>
+      Helpers.showSuccessSnackBar(context, 'แก้ไขสินค้าสำเร็จ');
+  void _deleteProduct(Map<String, dynamic> product) =>
+      Helpers.showSuccessSnackBar(context, 'ลบสินค้าสำเร็จ');
 }
 
 class ProductFormDialog extends StatefulWidget {
@@ -465,12 +439,8 @@ class ProductFormDialog extends StatefulWidget {
   final Map<String, dynamic>? product;
   final Function(Map<String, dynamic>) onSave;
 
-  const ProductFormDialog({
-    super.key,
-    required this.title,
-    this.product,
-    required this.onSave,
-  });
+  const ProductFormDialog(
+      {super.key, required this.title, this.product, required this.onSave});
 
   @override
   State<ProductFormDialog> createState() => _ProductFormDialogState();
@@ -482,7 +452,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   String _selectedCategory = 'ผ้าไหม';
   bool _isActive = true;
 
@@ -523,68 +493,46 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'ชื่อสินค้า',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => Validators.validateRequired(value, 'ชื่อสินค้า'),
+                      labelText: 'ชื่อสินค้า', border: OutlineInputBorder()),
+                  validator: (value) =>
+                      Validators.validateRequired(value, 'ชื่อสินค้า'),
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
-                
                 TextFormField(
                   controller: _priceController,
                   decoration: const InputDecoration(
-                    labelText: 'ราคา (บาท)',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: 'ราคา (บาท)', border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                   validator: Validators.validatePrice,
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
-                
                 TextFormField(
                   controller: _stockController,
                   decoration: const InputDecoration(
-                    labelText: 'จำนวน (ชิ้น)',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: 'จำนวน (ชิ้น)', border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                   validator: Validators.validateStock,
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
-                
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: const InputDecoration(
-                    labelText: 'หมวดหมู่',
-                    border: OutlineInputBorder(),
-                  ),
+                      labelText: 'หมวดหมู่', border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'ผ้าไหม', child: Text('ผ้าไหม')),
-                    DropdownMenuItem(value: 'เครื่องปั้น', child: Text('เครื่องปั้นดินเผา')),
-                    DropdownMenuItem(value: 'ของใช้ไม้ไผ่', child: Text('ของใช้ไม้ไผ่')),
-                    DropdownMenuItem(value: 'อาหาร', child: Text('อาหารพื้นเมือง')),
-                    DropdownMenuItem(value: 'อื่นๆ', child: Text('อื่นๆ')),
+                    DropdownMenuItem(
+                        value: 'เครื่องปั้น', child: Text('เครื่องปั้น')),
+                    DropdownMenuItem(
+                        value: 'ของใช้ไม้ไผ่', child: Text('ของใช้ไม้ไผ่')),
                   ],
-                  onChanged: (value) => setState(() => _selectedCategory = value!),
+                  onChanged: (value) =>
+                      setState(() => _selectedCategory = value!),
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
-                
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'รายละเอียดสินค้า',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                  validator: Validators.validateDescription,
-                ),
-                const SizedBox(height: AppConstants.paddingMedium),
-                
                 SwitchListTile(
                   title: const Text('เปิดขาย'),
                   value: _isActive,
                   onChanged: (value) => setState(() => _isActive = value),
-                  activeColor: AppConstants.primaryColor,
                 ),
               ],
             ),
@@ -593,13 +541,12 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('ยกเลิก'),
-        ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ยกเลิก')),
         ElevatedButton(
-          onPressed: _saveProduct,
+          onPressed: _saveForm,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppConstants.primaryColor,
+            backgroundColor: const Color(0xFF7B1FA2),
             foregroundColor: Colors.white,
           ),
           child: const Text('บันทึก'),
@@ -608,17 +555,16 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     );
   }
 
-  void _saveProduct() {
+  void _saveForm() {
     if (_formKey.currentState!.validate()) {
       final productData = {
-        'name': _nameController.text.trim(),
-        'price': double.parse(_priceController.text),
-        'stock': int.parse(_stockController.text),
-        'description': _descriptionController.text.trim(),
+        'name': _nameController.text,
+        'price': double.tryParse(_priceController.text) ?? 0,
+        'stock': int.tryParse(_stockController.text) ?? 0,
         'category': _selectedCategory,
         'is_active': _isActive,
+        'description': _descriptionController.text,
       };
-      
       widget.onSave(productData);
     }
   }

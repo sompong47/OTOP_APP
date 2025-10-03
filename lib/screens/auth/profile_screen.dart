@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
-import '../../utils/constants.dart';
 import 'login_screen.dart';
 import '../seller/seller_dashboard_screen.dart';
 
@@ -38,10 +37,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _loadUserData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user != null) {
-      _usernameController.text = user.username;
-      _emailController.text = user.email;
+      _usernameController.text = user.username ?? '';
+      _emailController.text = user.email ?? '';
     }
   }
 
@@ -50,8 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement update profile API call
-    // For now, just simulate success
     await Future.delayed(const Duration(seconds: 2));
 
     setState(() {
@@ -74,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmed == true) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.logout();
-      
+
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -87,286 +84,493 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      appBar: AppBar(
-        title: const Text('ข้อมูลส่วนตัว'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => setState(() => _isEditing = true),
-              tooltip: 'แก้ไขข้อมูล',
-            ),
-        ],
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          final user = authProvider.user;
-          
-          if (user == null) {
-            return const Center(
-              child: Text('ไม่พบข้อมูลผู้ใช้'),
-            );
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.deepPurple.shade400,
+              Colors.blue.shade300,
+              Colors.white,
+            ],
+            stops: const [0.0, 0.3, 0.3],
+          ),
+        ),
+        child: SafeArea(
+          child: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              final user = authProvider.user;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.paddingLarge),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Profile Avatar
-                  Center(
-                    child: Stack(
+              if (user == null) {
+                return Center(
+                  child: Container(
+                    margin: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: AppConstants.primaryColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppConstants.primaryColor.withOpacity(0.3),
-                                spreadRadius: 5,
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.white,
+                        Icon(
+                          Icons.person_off_rounded,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'ไม่พบข้อมูลผู้ใช้',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (_isEditing)
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: AppConstants.successColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
-                  
-                  const SizedBox(height: 32),
+                );
+              }
 
-                  // User Info Card
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppConstants.paddingLarge),
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildHeader(user),
+                    Transform.translate(
+                      offset: const Offset(0, -40),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'ข้อมูลบัญชี',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: AppConstants.paddingMedium),
-
-                          // Username Field
-                          TextFormField(
-                            controller: _usernameController,
-                            decoration: const InputDecoration(
-                              labelText: 'ชื่อผู้ใช้',
-                              prefixIcon: Icon(Icons.person),
-                            ),
-                            enabled: _isEditing,
-                            validator: _isEditing ? Validators.validateUsername : null,
-                          ),
-                          
-                          const SizedBox(height: AppConstants.paddingMedium),
-
-                          // Email Field
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'อีเมล',
-                              prefixIcon: Icon(Icons.email),
-                            ),
-                            enabled: _isEditing,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: _isEditing ? Validators.validateEmail : null,
-                          ),
-
-                          if (_isEditing) ...[
-                            const SizedBox(height: 24),
-                            
-                            // Action Buttons for Editing
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextButton(
-                                    onPressed: _isLoading ? null : () {
-                                      setState(() => _isEditing = false);
-                                      _loadUserData(); // Reset to original data
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppConstants.secondaryColor,
-                                    ),
-                                    child: const Text('ยกเลิก'),
-                                  ),
-                                ),
-                                const SizedBox(width: AppConstants.paddingMedium),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: _isLoading ? null : _updateProfile,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppConstants.primaryColor,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                            ),
-                                          )
-                                        : const Text('บันทึก'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          _buildProfileCard(user),
+                          const SizedBox(height: 16),
+                          _buildMenuSection(),
+                          const SizedBox(height: 16),
+                          _buildLogoutButton(),
+                          const SizedBox(height: 16),
+                          _buildVersionInfo(),
+                          const SizedBox(height: 32),
                         ],
                       ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(dynamic user) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 80),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'โปรไฟล์',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              if (!_isEditing)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-
-                  const SizedBox(height: AppConstants.paddingLarge),
-
-                  // Menu Options
-                 Card(
-  elevation: 2,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-  ),
-  child: Column(
-    children: [
-      // เพิ่มเมนูผู้ขายที่ด้านบน
-      _buildMenuTile(
-        icon: Icons.store,
-        title: 'จัดการร้านค้า',
-        subtitle: 'สำหรับผู้ขาย OTOP',
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SellerDashboardScreen(),
-            ),
-          );
-        },
-      ),
-      const Divider(height: 1),
-      _buildMenuTile(
-        icon: Icons.shopping_bag,
-        title: 'คำสั่งซื้อของฉัน',
-        subtitle: 'ดูประวัติการสั่งซื้อ',
-        onTap: () {
-          // TODO: Navigate to orders screen
-          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-        },
-      ),
-      const Divider(height: 1),
-      _buildMenuTile(
-        icon: Icons.favorite,
-        title: 'รายการโปรด',
-        subtitle: 'สินค้าที่ถูกใจ',
-        onTap: () {
-          // TODO: Navigate to favorites screen
-          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-        },
-      ),
-      const Divider(height: 1),
-      _buildMenuTile(
-        icon: Icons.notifications,
-        title: 'การแจ้งเตือน',
-        subtitle: 'ตั้งค่าการแจ้งเตือน',
-        onTap: () {
-          // TODO: Navigate to notifications settings
-          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-        },
-      ),
-      const Divider(height: 1),
-      _buildMenuTile(
-        icon: Icons.help,
-        title: 'ช่วยเหลือ',
-        subtitle: 'คำถามที่พบบ่อย',
-        onTap: () {
-          // TODO: Navigate to help screen
-          Helpers.showSnackBar(context, 'กำลังพัฒนา...');
-        },
-      ),
-    ],
-  ),
-),
-
-                  const SizedBox(height: AppConstants.paddingLarge),
-
-                  // Logout Button
-                  SizedBox(
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout, color: AppConstants.errorColor),
-                      label: const Text(
-                        'ออกจากระบบ',
-                        style: TextStyle(
-                          color: AppConstants.errorColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  child: IconButton(
+                    icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                    onPressed: () => setState(() => _isEditing = true),
+                    tooltip: 'แก้ไขข้อมูล',
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Colors.blue.shade50],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.deepPurple.shade300,
+                        Colors.blue.shade300,
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      user.username?.substring(0, 1).toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppConstants.errorColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    ),
+                  ),
+                ),
+              ),
+              if (_isEditing)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade400, Colors.green.shade600],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            user.username ?? 'ผู้ใช้',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            user.email ?? '',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(dynamic user) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.deepPurple.shade400,
+                        Colors.blue.shade400,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'ข้อมูลบัญชี',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isEditing ? Colors.deepPurple.shade200 : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'ชื่อผู้ใช้',
+                  labelStyle: TextStyle(color: Colors.deepPurple.shade400),
+                  prefixIcon: Icon(
+                    Icons.person_outline_rounded,
+                    color: Colors.deepPurple.shade300,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                ),
+                enabled: _isEditing,
+                validator: _isEditing ? Validators.validateUsername : null,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isEditing ? Colors.deepPurple.shade200 : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'อีเมล',
+                  labelStyle: TextStyle(color: Colors.deepPurple.shade400),
+                  prefixIcon: Icon(
+                    Icons.email_outlined,
+                    color: Colors.deepPurple.shade300,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                ),
+                enabled: _isEditing,
+                keyboardType: TextInputType.emailAddress,
+                validator: _isEditing ? Validators.validateEmail : null,
+              ),
+            ),
+            if (_isEditing) ...[
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300, width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isLoading
+                              ? null
+                              : () {
+                                  setState(() => _isEditing = false);
+                                  _loadUserData();
+                                },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Center(
+                            child: Text(
+                              'ยกเลิก',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: AppConstants.paddingLarge),
-
-                  // App Version
-                  Center(
-                    child: Text(
-                      'เวอร์ชัน ${AppConstants.version}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppConstants.secondaryColor,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.deepPurple.shade400,
+                            Colors.blue.shade400,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isLoading ? null : _updateProfile,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'บันทึก',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildMenuTile(
+            icon: Icons.store_rounded,
+            title: 'จัดการร้านค้า',
+            subtitle: 'สำหรับผู้ขาย OTOP',
+            gradient: LinearGradient(
+              colors: [Colors.purple.shade400, Colors.purple.shade600],
             ),
-          );
-        },
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SellerDashboardScreen(),
+                ),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildMenuTile(
+            icon: Icons.shopping_bag_rounded,
+            title: 'คำสั่งซื้อของฉัน',
+            subtitle: 'ดูประวัติการสั่งซื้อ',
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade400, Colors.blue.shade600],
+            ),
+            onTap: () => Helpers.showSnackBar(context, 'กำลังพัฒนา...'),
+          ),
+          _buildDivider(),
+          _buildMenuTile(
+            icon: Icons.favorite_rounded,
+            title: 'รายการโปรด',
+            subtitle: 'สินค้าที่ถูกใจ',
+            gradient: LinearGradient(
+              colors: [Colors.pink.shade300, Colors.pink.shade500],
+            ),
+            onTap: () => Helpers.showSnackBar(context, 'กำลังพัฒนา...'),
+          ),
+          _buildDivider(),
+          _buildMenuTile(
+            icon: Icons.notifications_rounded,
+            title: 'การแจ้งเตือน',
+            subtitle: 'ตั้งค่าการแจ้งเตือน',
+            gradient: LinearGradient(
+              colors: [Colors.orange.shade400, Colors.orange.shade600],
+            ),
+            onTap: () => Helpers.showSnackBar(context, 'กำลังพัฒนา...'),
+          ),
+          _buildDivider(),
+          _buildMenuTile(
+            icon: Icons.help_rounded,
+            title: 'ช่วยเหลือ',
+            subtitle: 'คำถามที่พบบ่อย',
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade400, Colors.teal.shade600],
+            ),
+            onTap: () => Helpers.showSnackBar(context, 'กำลังพัฒนา...'),
+          ),
+        ],
       ),
     );
   }
@@ -375,38 +579,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
+    required Gradient gradient,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppConstants.primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+                size: 28,
+              ),
+            ],
+          ),
         ),
-        child: Icon(
-          icon,
-          color: AppConstants.primaryColor,
-          size: 20,
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Divider(height: 1, color: Colors.grey.shade200),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade300, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _logout,
+          borderRadius: BorderRadius.circular(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.logout_rounded, color: Colors.red.shade400),
+              const SizedBox(width: 12),
+              Text(
+                'ออกจากระบบ',
+                style: TextStyle(
+                  color: Colors.red.shade400,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildVersionInfo() {
+    return Text(
+      'เวอร์ชัน 1.0.0',
+      style: TextStyle(
+        color: Colors.grey.shade500,
+        fontSize: 13,
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: AppConstants.secondaryColor,
-          fontSize: AppConstants.fontSizeSmall,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: AppConstants.secondaryColor,
-      ),
-      onTap: onTap,
     );
   }
 }

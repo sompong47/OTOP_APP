@@ -85,7 +85,8 @@ class AppConstants {
   static const Duration connectTimeout = Duration(seconds: 5);
 
   // Image
-  static const String placeholderImage = 'https://via.placeholder.com/150x150?text=No+Image';
+  static const String placeholderImage =
+      'https://via.placeholder.com/150x150?text=No+Image';
   static const double maxImageSize = 2.0; // MB
   static const List<String> allowedImageTypes = ['jpg', 'jpeg', 'png', 'webp'];
 

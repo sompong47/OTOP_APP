@@ -12,7 +12,16 @@ class SellerOrderScreen extends StatefulWidget {
 class _SellerOrderScreenState extends State<SellerOrderScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedFilter = 'all';
+
+  // Modern Color Scheme
+  static const Color primaryPurple = Color(0xFF6366F1);
+  static const Color deepPurple = Color(0xFF4F46E5);
+  static const Color lightPurple = Color(0xFFE0E7FF);
+  static const Color accentBlue = Color(0xFF3B82F6);
+  static const Color lightBlue = Color(0xFFDEEBFF);
+  static const Color darkText = Color(0xFF1F2937);
+  static const Color lightText = Color(0xFF6B7280);
+  static const Color bgColor = Color(0xFFF8FAFC);
 
   @override
   void initState() {
@@ -29,38 +38,86 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('คำสั่งซื้อ'),
-        backgroundColor: Colors.transparent,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: AppConstants.primaryColor,
-          labelColor: AppConstants.primaryColor,
-          unselectedLabelColor: AppConstants.secondaryColor,
-          tabs: const [
-            Tab(text: 'ทั้งหมด'),
-            Tab(text: 'ใหม่'),
-            Tab(text: 'ยืนยันแล้ว'),
-            Tab(text: 'จัดส่งแล้ว'),
-            Tab(text: 'เสร็จสิ้น'),
-          ],
+        backgroundColor: Colors.white,
+        foregroundColor: darkText,
+        title: const Text(
+          'คำสั่งซื้อ',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: lightPurple,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.arrow_back_ios_new, size: 18),
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
-            tooltip: 'ค้นหาคำสั่งซื้อ',
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [primaryPurple, deepPurple],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryPurple.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.search, color: Colors.white, size: 20),
+              ),
+              onPressed: () => _showSearchDialog(context),
+              tooltip: 'ค้นหาคำสั่งซื้อ',
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Order Statistics
           _buildOrderStats(),
-          
-          // Orders List
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              indicatorColor: primaryPurple,
+              indicatorWeight: 3,
+              labelColor: primaryPurple,
+              unselectedLabelColor: lightText,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+              tabs: const [
+                Tab(text: 'ทั้งหมด'),
+                Tab(text: 'ใหม่'),
+                Tab(text: 'ยืนยันแล้ว'),
+                Tab(text: 'จัดส่งแล้ว'),
+                Tab(text: 'เสร็จสิ้น'),
+              ],
+            ),
+          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -80,33 +137,40 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
 
   Widget _buildOrderStats() {
     return Container(
-      margin: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
       child: Row(
         children: [
           Expanded(
             child: _buildStatCard(
               title: 'รายได้วันนี้',
               value: '฿3,250',
-              color: AppConstants.successColor,
-              icon: Icons.monetization_on,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF059669)],
+              ),
+              icon: Icons.monetization_on_outlined,
             ),
           ),
-          const SizedBox(width: AppConstants.paddingSmall),
+          const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
               title: 'คำสั่งซื้อใหม่',
               value: '8',
-              color: AppConstants.primaryColor,
-              icon: Icons.shopping_cart,
+              gradient: const LinearGradient(
+                colors: [primaryPurple, deepPurple],
+              ),
+              icon: Icons.shopping_cart_outlined,
             ),
           ),
-          const SizedBox(width: AppConstants.paddingSmall),
+          const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
               title: 'รอจัดส่ง',
               value: '5',
-              color: AppConstants.warningColor,
-              icon: Icons.local_shipping,
+              gradient: const LinearGradient(
+                colors: [accentBlue, Color(0xFF2563EB)],
+              ),
+              icon: Icons.local_shipping_outlined,
             ),
           ),
         ],
@@ -117,77 +181,101 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
   Widget _buildStatCard({
     required String title,
     required String value,
-    required Color color,
+    required Gradient gradient,
     required IconData icon,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingSmall),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: AppConstants.fontSizeMedium,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: primaryPurple.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: AppConstants.fontSizeSmall,
-                color: AppConstants.secondaryColor,
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildOrdersList(String status) {
-    final orders = _getMockOrders(status);
-    
-    if (orders.isEmpty) {
-      return _buildEmptyState(status);
-    }
+    final orders = <Map<String, dynamic>>[]; // TODO: API จริง
+
+    if (orders.isEmpty) return _buildEmptyState(status);
 
     return RefreshIndicator(
       onRefresh: () => _refreshOrders(status),
+      color: primaryPurple,
       child: ListView.builder(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        padding: const EdgeInsets.all(16),
         itemCount: orders.length,
-        itemBuilder: (context, index) {
-          return _buildOrderCard(orders[index]);
-        },
+        itemBuilder: (context, index) => _buildOrderCard(orders[index]),
       ),
     );
   }
 
   Widget _buildEmptyState(String status) {
     String message = 'ไม่มีคำสั่งซื้อ';
-    IconData icon = Icons.inbox;
-    
+    IconData icon = Icons.inbox_outlined;
+    Gradient gradient = const LinearGradient(
+      colors: [primaryPurple, deepPurple],
+    );
+
     switch (status) {
       case 'pending':
         message = 'ไม่มีคำสั่งซื้อใหม่';
-        icon = Icons.notifications;
+        icon = Icons.notifications_outlined;
+        gradient = const LinearGradient(
+          colors: [primaryPurple, deepPurple],
+        );
         break;
       case 'confirmed':
         message = 'ไม่มีคำสั่งซื้อที่ยืนยันแล้ว';
-        icon = Icons.check_circle;
+        icon = Icons.check_circle_outline;
+        gradient = const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+        );
         break;
       case 'shipped':
         message = 'ไม่มีคำสั่งซื้อที่จัดส่งแล้ว';
-        icon = Icons.local_shipping;
+        icon = Icons.local_shipping_outlined;
+        gradient = const LinearGradient(
+          colors: [accentBlue, Color(0xFF2563EB)],
+        );
         break;
       case 'delivered':
         message = 'ไม่มีคำสั่งซื้อที่เสร็จสิ้น';
         icon = Icons.done_all;
+        gradient = const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+        );
         break;
     }
 
@@ -195,19 +283,38 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 80,
-            color: Colors.grey[400],
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: primaryPurple.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 64, color: Colors.white),
           ),
-          const SizedBox(height: AppConstants.paddingMedium),
+          const SizedBox(height: 24),
           Text(
             message,
-            style: TextStyle(
-              fontSize: AppConstants.fontSizeLarge,
+            style: const TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: darkText,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'คำสั่งซื้อจะปรากฏที่นี่เมื่อมีลูกค้าสั่งซื้อ',
+            style: TextStyle(
+              fontSize: 14,
+              color: lightText,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -219,169 +326,312 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
     final statusColor = Helpers.getOrderStatusColor(status);
     final statusText = Helpers.getOrderStatusText(status);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppConstants.paddingMedium),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order Header
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'คำสั่งซื้อ #${order['id']}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppConstants.fontSizeMedium,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            statusColor.withOpacity(0.2),
+                            statusColor.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long,
+                        color: statusColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'คำสั่งซื้อ #${order['id']}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: darkText,
+                      ),
+                    ),
+                  ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.paddingSmall,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                    border: Border.all(color: statusColor),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: statusColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Text(
                     statusText,
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: AppConstants.fontSizeSmall,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-            
-            const SizedBox(height: AppConstants.paddingSmall),
-            
+
+            const SizedBox(height: 16),
+
             // Customer Info
-            Row(
-              children: [
-                const Icon(Icons.person, size: 16, color: AppConstants.secondaryColor),
-                const SizedBox(width: 4),
-                Text(
-                  order['customer_name'],
-                  style: TextStyle(
-                    color: AppConstants.secondaryColor,
-                    fontSize: AppConstants.fontSizeSmall,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: AppConstants.paddingSmall),
-            
-            // Order Date
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16, color: AppConstants.secondaryColor),
-                const SizedBox(width: 4),
-                Text(
-                  Helpers.formatDateTime(order['created_at']),
-                  style: TextStyle(
-                    color: AppConstants.secondaryColor,
-                    fontSize: AppConstants.fontSizeSmall,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: AppConstants.paddingMedium),
-            
-            // Order Items Preview
-            if (order['items'] != null && order['items'].isNotEmpty) ...[
-              Text(
-                'รายการสินค้า (${order['items'].length} รายการ):',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppConstants.fontSizeSmall,
-                ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: lightPurple.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: AppConstants.paddingSmall),
-              ...order['items'].take(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '• ${item['product_name']} x${item['quantity']}',
-                        style: TextStyle(
-                          color: AppConstants.secondaryColor,
-                          fontSize: AppConstants.fontSizeSmall,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: primaryPurple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          size: 16,
+                          color: primaryPurple,
                         ),
                       ),
-                    ),
-                    Text(
-                      Helpers.formatPrice(item['total_price']),
-                      style: TextStyle(
-                        color: AppConstants.secondaryColor,
-                        fontSize: AppConstants.fontSizeSmall,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order['customer_name'],
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: darkText,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: accentBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: accentBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        Helpers.formatDateTime(order['created_at']),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: lightText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Items
+            if (order['items'] != null && order['items'].isNotEmpty) ...[
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: lightBlue.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: const Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 16,
+                      color: accentBlue,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'สินค้า (${order['items'].length} รายการ)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: darkText,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    ...order['items'].take(2).map((item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: primaryPurple.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'x${item['quantity']}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryPurple,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  item['product_name'],
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: darkText,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                Helpers.formatPrice(item['total_price']),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: darkText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                    if (order['items'].length > 2)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: lightPurple.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'และอีก ${order['items'].length - 2} รายการ',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                            color: lightText,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-              )).toList(),
-              if (order['items'].length > 2)
-                Text(
-                  'และอีก ${order['items'].length - 2} รายการ',
-                  style: TextStyle(
-                    color: AppConstants.secondaryColor,
-                    fontSize: AppConstants.fontSizeSmall,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+              ),
             ],
-            
-            const SizedBox(height: AppConstants.paddingMedium),
-            
-            // Total and Actions
+
+            const SizedBox(height: 16),
+
+            Divider(color: Colors.grey.withOpacity(0.2), thickness: 1),
+
+            const SizedBox(height: 16),
+
+            // Total & Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'ยอดรวม',
-                      style: TextStyle(fontSize: AppConstants.fontSizeSmall),
+                      'ยอดรวมทั้งหมด',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: lightText,
+                      ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       Helpers.formatPrice(order['total_amount']),
-                      style: TextStyle(
+                      style: const TextStyle(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        fontSize: AppConstants.fontSizeLarge,
-                        color: AppConstants.primaryColor,
+                        color: primaryPurple,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: () => _viewOrderDetail(order),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppConstants.primaryColor,
-                        side: const BorderSide(color: AppConstants.primaryColor),
+                        foregroundColor: primaryPurple,
+                        side: BorderSide(color: primaryPurple.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                       ),
-                      child: const Text('ดูรายละเอียด'),
+                      icon: const Icon(Icons.visibility_outlined, size: 18),
+                      label: const Text('ดู'),
                     ),
                     if (_canUpdateStatus(status)) ...[
-                      const SizedBox(width: AppConstants.paddingSmall),
-                      ElevatedButton(
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
                         onPressed: () => _showUpdateStatusDialog(order),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppConstants.primaryColor,
+                          backgroundColor: primaryPurple,
                           foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          elevation: 0,
                         ),
-                        child: const Text('อัพเดทสถานะ'),
+                        icon: const Icon(Icons.update, size: 18),
+                        label: const Text('อัพเดท'),
                       ),
                     ],
                   ],
@@ -394,62 +644,8 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
     );
   }
 
-  bool _canUpdateStatus(String status) {
-    return status == 'pending' || status == 'confirmed';
-  }
-
-  List<Map<String, dynamic>> _getMockOrders(String status) {
-    final allOrders = [
-      {
-        'id': 1001,
-        'customer_name': 'นายสมชาย ใจดี',
-        'customer_phone': '0812345678',
-        'total_amount': 1500.0,
-        'status': 'pending',
-        'created_at': DateTime.now().subtract(const Duration(hours: 2)),
-        'items': [
-          {
-            'product_name': 'ผ้าไหมไทยสีทอง',
-            'quantity': 1,
-            'total_price': 1500.0,
-          },
-        ],
-      },
-      {
-        'id': 1002,
-        'customer_name': 'นางสาวมาลี สวยงาม',
-        'customer_phone': '0823456789',
-        'total_amount': 850.0,
-        'status': 'confirmed',
-        'created_at': DateTime.now().subtract(const Duration(hours: 5)),
-        'items': [
-          {
-            'product_name': 'เครื่องปั้นดินเผาลายไทย',
-            'quantity': 1,
-            'total_price': 850.0,
-          },
-        ],
-      },
-      {
-        'id': 1003,
-        'customer_name': 'นายประยุทธ์ มั่งคั่ง',
-        'customer_phone': '0834567890',
-        'total_amount': 500.0,
-        'status': 'shipped',
-        'created_at': DateTime.now().subtract(const Duration(days: 1)),
-        'items': [
-          {
-            'product_name': 'ตะกร้าไม้ไผ่สานมือ',
-            'quantity': 2,
-            'total_price': 500.0,
-          },
-        ],
-      },
-    ];
-
-    if (status == 'all') return allOrders;
-    return allOrders.where((order) => order['status'] == status).toList();
-  }
+  bool _canUpdateStatus(String status) =>
+      status == 'pending' || status == 'confirmed';
 
   Future<void> _refreshOrders(String status) async {
     await Future.delayed(const Duration(seconds: 2));
@@ -459,24 +655,58 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('ค้นหาคำสั่งซื้อ'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [primaryPurple, deepPurple],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.search, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('ค้นหาคำสั่งซื้อ'),
+          ],
+        ),
         content: TextField(
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'หมายเลขคำสั่งซื้อหรือชื่อลูกค้า',
-            border: OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.search, color: primaryPurple),
+            filled: true,
+            fillColor: lightPurple.withOpacity(0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryPurple, width: 2),
+            ),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ยกเลิก'),
+            child: const Text('ยกเลิก', style: TextStyle(color: lightText)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               Helpers.showSnackBar(context, 'กำลังพัฒนาฟีเจอร์ค้นหา...');
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
             child: const Text('ค้นหา'),
           ),
         ],
@@ -485,7 +715,6 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
   }
 
   void _viewOrderDetail(Map<String, dynamic> order) {
-    // TODO: Navigate to order detail screen
     Helpers.showSnackBar(context, 'ดูรายละเอียดคำสั่งซื้อ #${order['id']}');
   }
 
@@ -496,33 +725,48 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('อัพเดทสถานะคำสั่งซื้อ #${order['id']}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
-            Text('สถานะปัจจุบัน: ${Helpers.getOrderStatusText(currentStatus)}'),
-            const SizedBox(height: AppConstants.paddingMedium),
-            DropdownButtonFormField<String>(
-              value: newStatus,
-              decoration: const InputDecoration(
-                labelText: 'สถานะใหม่',
-                border: OutlineInputBorder(),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [primaryPurple, deepPurple],
+                ),
+                borderRadius: BorderRadius.circular(10),
               ),
-              items: _getAvailableStatuses(currentStatus).map((status) {
-                return DropdownMenuItem(
-                  value: status,
-                  child: Text(Helpers.getOrderStatusText(status)),
-                );
-              }).toList(),
-              onChanged: (value) => newStatus = value!,
+              child: const Icon(Icons.update, color: Colors.white, size: 20),
             ),
+            const SizedBox(width: 12),
+            Text('อัพเดทสถานะ #${order['id']}'),
           ],
+        ),
+        content: DropdownButtonFormField<String>(
+          value: newStatus,
+          decoration: InputDecoration(
+            labelText: 'สถานะใหม่',
+            filled: true,
+            fillColor: lightPurple.withOpacity(0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryPurple, width: 2),
+            ),
+          ),
+          items: _getAvailableStatuses(currentStatus).map((s) {
+            return DropdownMenuItem(
+                value: s, child: Text(Helpers.getOrderStatusText(s)));
+          }).toList(),
+          onChanged: (value) => newStatus = value!,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ยกเลิก'),
+            child: const Text('ยกเลิก', style: TextStyle(color: lightText)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -530,8 +774,12 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
               _updateOrderStatus(order, newStatus);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.primaryColor,
+              backgroundColor: primaryPurple,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
             ),
             child: const Text('อัพเดท'),
           ),
@@ -567,14 +815,10 @@ class _SellerOrderScreenState extends State<SellerOrderScreen>
   }
 
   void _updateOrderStatus(Map<String, dynamic> order, String newStatus) {
-    // TODO: Implement API call to update order status
-    setState(() {
-      order['status'] = newStatus;
-    });
-    
+    setState(() => order['status'] = newStatus);
     Helpers.showSuccessSnackBar(
       context,
-      'อัพเดทสถานะคำสั่งซื้อ #${order['id']} เป็น ${Helpers.getOrderStatusText(newStatus)} แล้ว',
+      'อัพเดทคำสั่งซื้อ #${order['id']} เป็น ${Helpers.getOrderStatusText(newStatus)} แล้ว',
     );
   }
 }
