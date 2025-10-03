@@ -19,6 +19,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   late TextEditingController _priceController;
   late TextEditingController _stockController;
   bool _loading = false;
+  bool _loadingCategories = true;
+
+  // Categories
+  List<Map<String, dynamic>> _categories = [];
+  int? _selectedCategoryId;
 
   // Image picker
   final ImagePicker _picker = ImagePicker();
@@ -39,8 +44,65 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       text: widget.product?['stock']?.toString() ?? '0',
     );
     
-    // เก็บ URL รูปเดิม (ถ้ามี)
     _existingImageUrl = widget.product?['image'];
+    
+    // ✅ โหลด categories
+    _loadCategories();
+  }
+
+  // ✅ โหลดรายการหมวดหมู่
+  Future<void> _loadCategories() async {
+    setState(() => _loadingCategories = true);
+    
+    try {
+      final result = await productService.getCategories();
+      
+      if (result['success']) {
+        final data = result['data'];
+        List<Map<String, dynamic>> categoryList = [];
+        
+        if (data is Map && data.containsKey('results')) {
+          categoryList = List<Map<String, dynamic>>.from(data['results']);
+        } else if (data is List) {
+          categoryList = List<Map<String, dynamic>>.from(data);
+        }
+        
+        setState(() {
+          _categories = categoryList;
+          
+          // ถ้าเป็นการแก้ไข ให้หา category ID จากชื่อ
+          if (widget.product != null && widget.product!['category'] != null) {
+            final categoryName = widget.product!['category'];
+            final category = _categories.firstWhere(
+              (cat) => cat['name'] == categoryName,
+              orElse: () => {},
+            );
+            if (category.isNotEmpty) {
+              _selectedCategoryId = category['id'];
+            }
+          }
+          
+          _loadingCategories = false;
+        });
+        
+        debugPrint('✅ Loaded ${_categories.length} categories');
+      } else {
+        setState(() => _loadingCategories = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ไม่สามารถโหลดหมวดหมู่: ${result['message']}')),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _loadingCategories = false);
+      debugPrint('❌ Error loading categories: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -52,7 +114,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     super.dispose();
   }
 
-  // เลือกรูปจากแกลเลอรี
   Future<void> _pickImageFromGallery() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -68,7 +129,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     }
   }
 
-  // ถ่ายรูป
   Future<void> _pickImageFromCamera() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.camera,
@@ -84,7 +144,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     }
   }
 
-  // แสดง Bottom Sheet เลือกแหล่งที่มาของรูป
   void _showImageSourceDialog() {
     showModalBottomSheet(
       context: context,
@@ -128,45 +187,87 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // ✅ ตรวจสอบว่าเลือก category แล้วหรือยัง
+    if (_selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณาเลือกหมวดหมู่สินค้า')),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
-    final data = {
-      'name': _nameController.text,
-      'description': _descController.text,
-      'price': double.tryParse(_priceController.text) ?? 0,
+    // ✅ สร้าง data object พร้อม type ที่ถูกต้อง
+    final data = <String, dynamic>{
+      'name': _nameController.text.trim(),
+      'description': _descController.text.trim(),
+      'price': double.tryParse(_priceController.text) ?? 0.0,
       'stock': int.tryParse(_stockController.text) ?? 0,
+      'category': _selectedCategoryId!, // ✅ ส่ง category ID (int)
+      'is_active': true, // ✅ เพิ่ม is_active
     };
 
-    // ถ้ามีรูปใหม่ ต้องส่งเป็น multipart/form-data
-    // TODO: ต้องแก้ไข ProductService ให้รองรับการส่งไฟล์
-    // สำหรับตอนนี้ ส่งเป็น JSON ก่อน
+    // ✅ ถ้ามีรูปใหม่ ให้ใส่ File object
     if (_imageFile != null) {
-      // TODO: อัพโหลดรูปและได้ URL กลับมา
-      // data['image'] = imageUrl;
-      debugPrint('Image file selected: ${_imageFile!.path}');
-      // ⚠️ ต้องแก้ไข ProductService ให้รองรับ multipart upload
+      data['image'] = _imageFile;
+      debugPrint('📸 Image file selected: ${_imageFile!.path}');
     }
+
+    debugPrint('📤 Submitting product data: ${data.entries.where((e) => e.key != 'image').map((e) => '${e.key}: ${e.value}').join(', ')}');
 
     Map<String, dynamic> res;
 
-    if (widget.product == null) {
-      res = await productService.createProduct(data);
-    } else {
-      res = await productService.updateProduct(widget.product!['id'], data);
-    }
-
-    setState(() => _loading = false);
-
-    if (res['success']) {
-      if (mounted) {
-        Navigator.of(context).pop(true);
+    try {
+      if (widget.product == null) {
+        // สร้างสินค้าใหม่
+        res = await productService.createProduct(data);
+      } else {
+        // แก้ไขสินค้า
+        res = await productService.updateProduct(widget.product!['id'], data);
       }
-    } else {
+
+      setState(() => _loading = false);
+
+      if (res['success']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(widget.product == null ? 'เพิ่มสินค้าสำเร็จ' : 'แก้ไขสินค้าสำเร็จ'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop(true); // ส่ง true เพื่อ refresh
+        }
+      } else {
+        if (mounted) {
+          // แสดง error message ที่ละเอียด
+          String errorMsg = 'เกิดข้อผิดพลาด';
+          if (res['message'] != null) {
+            errorMsg = res['message'].toString();
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          
+          debugPrint('❌ Error response: $errorMsg');
+        }
+      }
+    } catch (e) {
+      setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res['message'] ?? 'เกิดข้อผิดพลาด')),
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาด: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      debugPrint('❌ Submit error: $e');
     }
   }
 
@@ -247,8 +348,40 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.shopping_bag),
                   ),
-                  validator: (v) => v!.isEmpty ? 'กรุณากรอกชื่อสินค้า' : null,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'กรุณากรอกชื่อสินค้า' : null,
                 ),
+                const SizedBox(height: 12),
+
+                // ✅ Category Dropdown
+                if (_loadingCategories)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<int>(
+                    value: _selectedCategoryId,
+                    decoration: const InputDecoration(
+                      labelText: 'หมวดหมู่ *',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category),
+                    ),
+                    hint: const Text('เลือกหมวดหมู่สินค้า'),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem<int>(
+                        value: category['id'],
+                        child: Text(category['name'] ?? 'ไม่มีชื่อ'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategoryId = value;
+                      });
+                    },
+                    validator: (value) => value == null ? 'กรุณาเลือกหมวดหมู่' : null,
+                  ),
                 const SizedBox(height: 12),
 
                 // Description Field
@@ -275,8 +408,13 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                           prefixIcon: Icon(Icons.attach_money),
                           suffixText: '฿',
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v!.isEmpty ? 'กรุณากรอกราคา' : null,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'กรุณากรอกราคา';
+                          final price = double.tryParse(v);
+                          if (price == null || price <= 0) return 'ราคาต้องมากกว่า 0';
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -290,6 +428,12 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                           suffixText: 'ชิ้น',
                         ),
                         keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final stock = int.tryParse(v);
+                          if (stock == null || stock < 0) return 'จำนวนต้องไม่ติดลบ';
+                          return null;
+                        },
                       ),
                     ),
                   ],
