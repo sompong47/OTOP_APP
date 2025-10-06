@@ -128,8 +128,15 @@ flutter test integration_test
 ```
 
 ## 📸 Screenshots
+หน้าแรก
+<img width="319" height="688" alt="image" src="https://github.com/user-attachments/assets/94dc93e2-d7dd-47ec-9f94-c0ee039fea45" />
+หน้าคำสั่งซื้อ
+<img width="320" height="678" alt="image" src="https://github.com/user-attachments/assets/206d2857-7976-4b43-86e5-2256f9a240a9" />
+หน้าจัดการคำสั่งซื้อของผู้ขาย
+<img width="320" height="678" alt="image" src="https://github.com/user-attachments/assets/b7f64891-346b-43cc-80f0-d79c8f23e6f5" />
+หน้าตระกร้าสินค้า
+<img width="326" height="687" alt="image" src="https://github.com/user-attachments/assets/c73fa202-f856-4d9f-96a0-09522c4a7e34" />
 
-_เพิ่ม screenshots ของแอปพลิเคชันที่นี่_
 
 ## 🤝 การมีส่วนร่วม
 
