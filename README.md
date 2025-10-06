@@ -137,6 +137,9 @@ flutter test integration_test
 
 <img width="326" height="687" alt="image" src="https://github.com/user-attachments/assets/c73fa202-f856-4d9f-96a0-09522c4a7e34" />
 
+<img width="322" height="691" alt="image" src="https://github.com/user-attachments/assets/fb3df370-6e7d-4e07-8c0d-4b677b89647c" />
+
+
 
 ## 🤝 การมีส่วนร่วม
 
